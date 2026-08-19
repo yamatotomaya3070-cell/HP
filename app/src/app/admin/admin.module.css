@@ -1,0 +1,139 @@
+/* 管理ダッシュボード。落ち着いた緑基調・数値の可読性重視・十分な余白。 */
+
+.shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(1.25rem, 2.5vw, 2.5rem) 1.25rem 5rem;
+  font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", sans-serif;
+  color: #253026;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  border-bottom: 2px solid #e2e8e0;
+  padding-bottom: 0.85rem;
+  margin-bottom: 1.75rem;
+}
+
+.title {
+  font-size: clamp(1.4rem, 1rem + 1.8vw, 1.9rem);
+  font-weight: 700;
+  color: #1f6f44;
+  margin: 0;
+}
+
+.sub {
+  color: #6b786e;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #313d35;
+  margin: 2rem 0 0.9rem;
+}
+
+/* ── ファネルのスタットタイル ── */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 1rem 1.1rem;
+  background: #f3f7f4;
+  border: 1px solid #d8e0da;
+  border-radius: 12px;
+}
+
+.tileNum {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #1f6f44;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.tileLabel {
+  font-size: 0.85rem;
+  color: #6b786e;
+}
+
+/* ── テーブル ── */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid #d8e0da;
+  border-radius: 12px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.table th,
+.table td {
+  padding: 0.6rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid #eef2ee;
+}
+
+.table thead th {
+  background: #eef4f0;
+  color: #45514a;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.table tbody tr:hover {
+  background: #f3f7f4;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  color: #6b786e;
+  padding: 0.75rem 0;
+}
+
+/* ── 本命スコア区分バッジ ── */
+.band {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.hot {
+  background: #1f6f44;
+  color: #fff;
+}
+
+.warm {
+  background: #fbe6c8;
+  color: #8a5a12;
+}
+
+.cold {
+  background: #e2e8e0;
+  color: #6b786e;
+}

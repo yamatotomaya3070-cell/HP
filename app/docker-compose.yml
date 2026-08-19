@@ -1,0 +1,17 @@
+# Phase 1 開発用 Postgres。`npm run db:up` で起動。
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: kizuna_hp_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kizuna
+      POSTGRES_PASSWORD: kizuna
+      POSTGRES_DB: kizuna_hp
+    ports:
+      - "5432:5432"
+    volumes:
+      - kizuna_hp_pgdata:/var/lib/postgresql/data
+
+volumes:
+  kizuna_hp_pgdata:

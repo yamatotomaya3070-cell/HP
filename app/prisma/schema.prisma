@@ -1,0 +1,446 @@
+// 就労継続支援B型 AIホームページ自動作成サービス — データモデル
+// 仕様書「4. 必要なデータ構造」準拠。既存DBは無いため全テーブル新規。
+// 共通テンプレート（コード）と事業所ごとの構造化データ（site_versions.data）は分離する。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── 列挙 ────────────────────────────────────────────────
+
+/// 事業所の現在ステージ（仕様5.）。履歴は LeadEvent / AuditLog に別途保存する。
+enum FacilityStatus {
+  imported // 取込済み
+  site_generated // HP生成済み
+  email_sent // メール送信済み
+  replied // メール返信あり
+  free_edit_1 // 無料編集1回目
+  free_edit_2 // 無料編集2回目
+  free_edit_3 // 無料編集3回目
+  card_registered // カード登録済み
+  trialing // 14日無料体験中
+  published // 正式公開済み
+  subscribed // 月額契約中
+  canceled // 月額解約済み
+  resubscribed // 再契約済み
+  suppressed // 配信停止
+  hot_lead // 本命案件候補
+}
+
+/// WAM NET 収集時のメール取得状況。
+enum EmailCollectStatus {
+  ok
+  no_email_listed
+  error
+  unknown
+}
+
+enum SitePublishState {
+  draft // 生成直後の下書き
+  preview // 非公開プレビュー（noindex）
+  published // 正式公開
+  static // 解約後の静的公開（AI編集停止・公開継続）
+}
+
+enum SiteVersionOrigin {
+  import // 取込直後の初期生成
+  ai_email // メール返信によるAI編集
+  ai_editor // 編集画面のAIチャット編集
+  manual // 手動
+  restore // 履歴からの復元
+}
+
+enum EditRequestChannel {
+  email
+  editor
+}
+
+enum EditRequestStatus {
+  received // 受信
+  parsed // 指示抽出済み
+  structured // AIが構造化
+  validated // ホワイトリスト検証OK
+  applied // 下書きへ反映
+  rejected // 変更不可（対象外）
+  failed // 処理失敗
+}
+
+enum EmailDirection {
+  inbound
+  outbound
+}
+
+enum TrialState {
+  active
+  converted // 課金へ移行
+  canceled // 期間中に解約
+  expired
+}
+
+enum SubscriptionState {
+  trialing
+  active
+  past_due
+  canceled
+}
+
+enum PaymentKind {
+  publish_5000 // 正式公開 初回5,000円
+  subscription // 月額4,000円
+}
+
+enum PaymentState {
+  pending
+  succeeded
+  failed
+  refunded
+}
+
+/// 行動ログの種類（仕様6.）。見込み度スコアの根拠。
+enum LeadEventType {
+  imported
+  site_generated
+  email_sent
+  email_opened
+  email_replied
+  ai_edit
+  photo_registered
+  info_updated
+  card_registered
+  published
+  subscribed
+  canceled
+  resubscribed
+  suppressed
+  status_changed
+}
+
+enum SuppressionReason {
+  unsubscribe // 配信停止リンク
+  complaint // 苦情
+  bounce // 不達
+  manual
+}
+
+/// トライアル終了通知のマイルストーン（3日前 / 前日 / 当日）。
+enum TrialReminderMilestone {
+  d3
+  d1
+  d0
+}
+
+// ── 事業所 ───────────────────────────────────────────────
+
+model Facility {
+  id String @id @default(cuid())
+
+  /// WAM NET 事業所番号（国採番）。重複判定の第一キー。
+  facilityNumber String? @map("facility_number")
+
+  name       String
+  corpName   String? @map("corp_name")
+  address    String?
+  prefecture String?
+  tel        String?
+  fax        String?
+  url        String? // 事業所HP URL
+  email      String?
+
+  emailStatus EmailCollectStatus @default(unknown) @map("email_status")
+
+  /// 情報取得元URL（出典明記用）。
+  sourceUrl     String?   @map("source_url")
+  /// 最終確認日。
+  lastCheckedAt DateTime? @map("last_checked_at")
+
+  /// 正規化した重複判定用の複合キー（法人名+事業所名+電話+所在地）。
+  dedupKey String @map("dedup_key")
+
+  status FacilityStatus @default(imported)
+
+  importId String?         @map("import_id")
+  import   FacilityImport? @relation(fields: [importId], references: [id])
+
+  sites        GeneratedSite[]
+  siteVersions SiteVersion[]
+  editRequests EditRequest[]
+  emailThreads EmailThread[]
+  trials       Trial[]
+  subscription Subscription?
+  payments     Payment[]
+  leadEvents   LeadEvent[]
+  auditLogs    AuditLog[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([facilityNumber])
+  @@index([dedupKey])
+  @@index([prefecture])
+  @@index([status])
+  @@map("facilities")
+}
+
+model FacilityImport {
+  id String @id @default(cuid())
+
+  source        String // 取込元（ファイル名/ディレクトリ）
+  prefecture    String?
+  totalRows     Int      @default(0) @map("total_rows")
+  insertedCount Int      @default(0) @map("inserted_count")
+  updatedCount  Int      @default(0) @map("updated_count")
+  skippedCount  Int      @default(0) @map("skipped_count")
+  errorCount    Int      @default(0) @map("error_count")
+  errors        Json? // [{row, reason}]
+
+  facilities Facility[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("facility_imports")
+}
+
+// ── 生成HP・履歴 ─────────────────────────────────────────
+
+model GeneratedSite {
+  id String @id @default(cuid())
+
+  facilityId String   @map("facility_id")
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  /// 推測不可能な公開/プレビュー用 slug。
+  slug         String           @unique
+  publishState SitePublishState @default(draft) @map("publish_state")
+
+  /// 現在有効なバージョン（プレビュー/公開対象）。
+  currentVersionId String?      @unique @map("current_version_id")
+  currentVersion   SiteVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+
+  screenshotPath String?   @map("screenshot_path")
+  publishedAt    DateTime? @map("published_at")
+
+  /// 事業所が持ち込む独自ドメイン（(B) 既存ドメインでの公開）。Host 判定の公開配信に使う。
+  customDomain     String?   @unique @map("custom_domain")
+  /// 独自ドメインの検証完了時刻（DNS/SSL 確認済み）。null の間は独自ドメインで公開しない。
+  domainVerifiedAt DateTime? @map("domain_verified_at")
+
+  /// 公開前の人手確認（事業所本人）。確認したチェック項目のスナップショットと時刻。
+  prePublishConfirm   Json?     @map("pre_publish_confirm")
+  prePublishConfirmedAt DateTime? @map("pre_publish_confirmed_at")
+
+  versions SiteVersion[] @relation("SiteVersions")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([facilityId])
+  @@map("generated_sites")
+}
+
+model SiteVersion {
+  id String @id @default(cuid())
+
+  siteId     String   @map("site_id")
+  site       GeneratedSite @relation("SiteVersions", fields: [siteId], references: [id], onDelete: Cascade)
+  facilityId String   @map("facility_id")
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  /// 事業所ごとの構造化データ（共通テンプレへ差し込む内容）。テンプレコードは含めない。
+  data   Json
+  origin SiteVersionOrigin @default(import)
+  note   String?
+
+  currentOf GeneratedSite? @relation("CurrentVersion")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([siteId])
+  @@index([facilityId])
+  @@map("site_versions")
+}
+
+model EditRequest {
+  id String @id @default(cuid())
+
+  facilityId String   @map("facility_id")
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  channel    EditRequestChannel
+  rawInput   String             @map("raw_input") // メール本文 / チャット入力
+  parsed     Json? // 抽出した変更指示
+  structured Json? // AIが構造化した diff
+  status     EditRequestStatus  @default(received)
+  rejectionReason String?       @map("rejection_reason")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([facilityId])
+  @@map("edit_requests")
+}
+
+// ── メール ───────────────────────────────────────────────
+
+model EmailThread {
+  id String @id @default(cuid())
+
+  facilityId String   @map("facility_id")
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  /// 事業所専用 Reply-To 識別トークン。
+  replyToken String         @unique @map("reply_token")
+  direction  EmailDirection
+  subject    String?
+  body       String?
+  messageId  String?        @map("message_id")
+
+  campaignId String?         @map("campaign_id")
+  campaign   EmailCampaign?  @relation(fields: [campaignId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([facilityId])
+  @@map("email_threads")
+}
+
+model EmailCampaign {
+  id String @id @default(cuid())
+
+  name       String
+  prefecture String?
+  stage      Int      @default(0) // 段階配信（300→1,000→県単位）
+  isTest     Boolean  @default(false) @map("is_test")
+  sentCount  Int      @default(0) @map("sent_count")
+
+  threads EmailThread[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("email_campaigns")
+}
+
+// ── 課金 ─────────────────────────────────────────────────
+
+model Trial {
+  id String @id @default(cuid())
+
+  facilityId String   @map("facility_id")
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  startedAt DateTime   @default(now()) @map("started_at")
+  endsAt    DateTime   @map("ends_at")
+  state     TrialState @default(active)
+
+  reminders TrialReminder[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([facilityId])
+  @@map("trials")
+}
+
+/// 送信済みトライアル通知の記録。unique(trialId, milestone) で二重送信を防ぐ（冪等）。
+model TrialReminder {
+  id String @id @default(cuid())
+
+  trialId String @map("trial_id")
+  trial   Trial  @relation(fields: [trialId], references: [id], onDelete: Cascade)
+
+  facilityId String                 @map("facility_id")
+  milestone  TrialReminderMilestone
+
+  sentAt DateTime @default(now()) @map("sent_at")
+
+  @@unique([trialId, milestone])
+  @@index([facilityId])
+  @@map("trial_reminders")
+}
+
+model Subscription {
+  id String @id @default(cuid())
+
+  facilityId String   @unique @map("facility_id")
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  stripeCustomerId     String?           @map("stripe_customer_id")
+  stripeSubscriptionId String?           @unique @map("stripe_subscription_id")
+  state                SubscriptionState @default(trialing)
+  nextBillingAt        DateTime?         @map("next_billing_at")
+  canceledAt           DateTime?         @map("canceled_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id String @id @default(cuid())
+
+  facilityId String   @map("facility_id")
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  kind          PaymentKind
+  amount        Int // 円
+  state         PaymentState @default(pending)
+  /// 決済Webhookイベントの冪等キー（重複配信の二重処理防止）。
+  stripeEventId String?      @unique @map("stripe_event_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([facilityId])
+  @@map("payments")
+}
+
+// ── 行動計測・停止・監査 ─────────────────────────────────
+
+model LeadEvent {
+  id String @id @default(cuid())
+
+  facilityId String   @map("facility_id")
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  type LeadEventType
+  meta Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([facilityId])
+  @@index([type])
+  @@map("lead_events")
+}
+
+model SuppressionList {
+  id String @id @default(cuid())
+
+  email      String            @unique
+  reason     SuppressionReason
+  facilityId String?           @map("facility_id")
+  note       String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("suppression_list")
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  facilityId String?   @map("facility_id")
+  facility   Facility? @relation(fields: [facilityId], references: [id])
+
+  action String // 例: facility.import, status.change, site.publish
+  actor  String? // admin id / system
+  before Json?
+  after  Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([facilityId])
+  @@index([action])
+  @@map("audit_logs")
+}

@@ -1,0 +1,567 @@
+<title>絆HP 立ち上げ費用と準備</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #f4f7f2;
+    --surface: #ffffff;
+    --surface-2: #eef2eb;
+    --text: #17211b;
+    --text-soft: #48554e;
+    --text-faint: #78847c;
+    --border: #e1e7df;
+    --border-strong: #cdd6ca;
+    --accent: #1f6f4d;
+    --accent-deep: #185a3e;
+    --accent-soft: #e3f0e8;
+    --amber: #97650f;
+    --amber-soft: #f6ecd4;
+    --shadow: 0 1px 2px rgba(20,40,30,.05), 0 8px 24px rgba(20,40,30,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1411;
+      --surface: #141d18;
+      --surface-2: #1a241e;
+      --text: #e9efe9;
+      --text-soft: #aab6ad;
+      --text-faint: #7b8981;
+      --border: #263129;
+      --border-strong: #33413a;
+      --accent: #52c08b;
+      --accent-deep: #3fa876;
+      --accent-soft: #16271e;
+      --amber: #d6a95a;
+      --amber-soft: #2a2316;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1411;
+    --surface: #141d18;
+    --surface-2: #1a241e;
+    --text: #e9efe9;
+    --text-soft: #aab6ad;
+    --text-faint: #7b8981;
+    --border: #263129;
+    --border-strong: #33413a;
+    --accent: #52c08b;
+    --accent-deep: #3fa876;
+    --accent-soft: #16271e;
+    --amber: #d6a95a;
+    --amber-soft: #2a2316;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.28);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic",
+      "Noto Sans JP", "Meiryo", system-ui, sans-serif;
+    line-height: 1.75;
+    font-feature-settings: "palt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: clamp(1.5rem, 1rem + 3vw, 3.5rem) clamp(1.1rem, 0.6rem + 2.5vw, 2.5rem) 5rem;
+  }
+
+  .eyebrow {
+    font-size: .74rem;
+    letter-spacing: .22em;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin: 0 0 .9rem;
+  }
+  h1 {
+    font-size: clamp(1.7rem, 1.2rem + 2.6vw, 2.65rem);
+    line-height: 1.25;
+    font-weight: 800;
+    letter-spacing: .01em;
+    text-wrap: balance;
+    margin: 0 0 .7rem;
+  }
+  .lede {
+    font-size: clamp(1rem, .95rem + .3vw, 1.12rem);
+    color: var(--text-soft);
+    max-width: 40em;
+    margin: 0;
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  .meta {
+    margin-top: 1.4rem;
+    font-size: .82rem;
+    color: var(--text-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem 1.2rem;
+  }
+
+  section { margin-top: 3.25rem; }
+  h2 {
+    font-size: clamp(1.22rem, 1.05rem + .7vw, 1.5rem);
+    font-weight: 800;
+    letter-spacing: .01em;
+    margin: 0 0 .35rem;
+    display: flex;
+    align-items: baseline;
+    gap: .6rem;
+  }
+  h2 .num {
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .section-sub {
+    color: var(--text-soft);
+    margin: 0 0 1.4rem;
+    font-size: .96rem;
+  }
+
+  /* money-flow callout */
+  .flows {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr 1fr;
+  }
+  @media (max-width: 560px) { .flows { grid-template-columns: 1fr; } }
+  .flow {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem 1.35rem;
+    box-shadow: var(--shadow);
+  }
+  .flow .tag {
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .flow .who { font-weight: 800; font-size: 1.05rem; margin: .35rem 0 .3rem; }
+  .flow p { margin: 0; color: var(--text-soft); font-size: .92rem; }
+  .flow.out { border-left: 4px solid var(--amber); }
+  .flow.in  { border-left: 4px solid var(--accent); }
+
+  /* summary tiles */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: .9rem;
+  }
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.15rem 1.25rem;
+    box-shadow: var(--shadow);
+  }
+  .tile .k { font-size: .82rem; color: var(--text-soft); margin: 0 0 .35rem; font-weight: 600; }
+  .tile .v {
+    font-size: 1.5rem; font-weight: 800; line-height: 1.15;
+    font-variant-numeric: tabular-nums; letter-spacing: -.01em;
+  }
+  .tile .v small { font-size: .78rem; font-weight: 600; color: var(--text-faint); }
+  .tile .note { font-size: .78rem; color: var(--text-faint); margin: .35rem 0 0; }
+
+  /* service cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.4rem 1.5rem;
+    box-shadow: var(--shadow);
+    margin-top: 1.1rem;
+  }
+  .card-head {
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: .6rem .8rem; margin-bottom: .95rem;
+  }
+  .card-head .idx {
+    font-variant-numeric: tabular-nums;
+    font-weight: 800; color: var(--accent);
+    font-size: .95rem;
+    background: var(--accent-soft);
+    width: 1.9rem; height: 1.9rem;
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none;
+  }
+  .card-head h3 { margin: 0; font-size: 1.12rem; font-weight: 800; }
+  .card-head .role { color: var(--text-faint); font-size: .85rem; font-weight: 600; }
+
+  .pill {
+    display: inline-flex; align-items: center;
+    font-size: .72rem; font-weight: 700; letter-spacing: .03em;
+    padding: .2rem .6rem; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill.free { background: var(--accent-soft); color: var(--accent-deep); }
+  .pill.paid { background: var(--amber-soft); color: var(--amber); }
+  .pill.fee  { background: var(--surface-2); color: var(--text-soft); }
+  .pill.star { background: var(--accent); color: #fff; }
+  :root[data-theme="dark"] .pill.star,
+  :root:not([data-theme="light"]) .pill.star { color: #0d1411; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .pill.star { color: #0d1411; }
+  }
+
+  .price-line {
+    display: flex; flex-wrap: wrap; gap: .5rem 1.4rem;
+    padding: .2rem 0 1rem;
+    border-bottom: 1px dashed var(--border-strong);
+    margin-bottom: 1rem;
+  }
+  .price-line div { font-size: .92rem; }
+  .price-line .lbl { color: var(--text-faint); font-size: .74rem; display: block; letter-spacing: .04em; }
+  .price-line .amt { font-weight: 800; font-variant-numeric: tabular-nums; }
+
+  .prep-title {
+    font-size: .76rem; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent);
+    margin: 0 0 .55rem;
+  }
+  .prep { margin: 0; padding: 0; list-style: none; display: grid; gap: .5rem; }
+  .prep li {
+    display: flex; gap: .6rem; font-size: .93rem; color: var(--text-soft);
+    align-items: flex-start;
+  }
+  .prep li::before {
+    content: ""; flex: none; margin-top: .5em;
+    width: .42rem; height: .42rem; border-radius: 2px;
+    background: var(--accent);
+  }
+  .prep li b { color: var(--text); font-weight: 700; }
+
+  /* tables */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; min-width: 460px; background: var(--surface); }
+  thead th {
+    text-align: left; font-weight: 700; font-size: .78rem; letter-spacing: .04em;
+    color: var(--text-soft); background: var(--surface-2);
+    padding: .8rem 1rem; white-space: nowrap;
+  }
+  tbody td { padding: .8rem 1rem; border-top: 1px solid var(--border); vertical-align: top; }
+  tbody td:first-child { font-weight: 700; }
+  td .amt, th .amt { font-variant-numeric: tabular-nums; }
+  tbody tr.total td { background: var(--accent-soft); font-weight: 800; border-top: 2px solid var(--accent); }
+  .num-col { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* checklist */
+  ol.steps { counter-reset: s; list-style: none; margin: 0; padding: 0; display: grid; gap: .8rem; }
+  ol.steps > li {
+    counter-increment: s;
+    display: grid; grid-template-columns: auto 1fr; gap: .9rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 13px; padding: 1rem 1.15rem; box-shadow: var(--shadow);
+  }
+  ol.steps > li::before {
+    content: counter(s);
+    font-variant-numeric: tabular-nums; font-weight: 800; font-size: .95rem;
+    color: #fff; background: var(--accent);
+    width: 1.9rem; height: 1.9rem; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  :root[data-theme="dark"] ol.steps > li::before { color: #0d1411; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) ol.steps > li::before { color: #0d1411; } }
+  ol.steps .st { font-weight: 700; margin: 0 0 .15rem; }
+  ol.steps .sd { margin: 0; color: var(--text-soft); font-size: .9rem; }
+  ol.steps .warn { color: var(--amber); font-weight: 700; font-size: .82rem; }
+
+  .callout {
+    margin-top: 1.4rem;
+    background: var(--accent-soft);
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+    border-radius: 14px; padding: 1.15rem 1.35rem;
+    font-size: .93rem; color: var(--text);
+  }
+  .callout b { color: var(--accent-deep); }
+  :root[data-theme="dark"] .callout b, :root:not([data-theme="light"]) .callout b { color: var(--accent); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .callout b { color: var(--accent); } }
+
+  footer {
+    margin-top: 3.5rem; padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-size: .82rem; color: var(--text-faint);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+  .src { display: grid; gap: .2rem; margin-top: .6rem; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">合同会社絆 &middot; AI-HP サービス</p>
+    <h1>立ち上げ費用と準備するもの</h1>
+    <p class="lede">サービスを実際にお客様（就労継続支援B型事業所）へ届けるために、運営側で契約・用意するものと、その料金をまとめました。金額は2026年8月時点の各社公表価格（$1≒155円換算）です。</p>
+    <div class="meta">
+      <span>作成 2026-08-14</span>
+      <span>対象：運営（合同会社絆）が用意する分</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>お金の流れは2方向</h2>
+    <p class="section-sub">まず全体像。運営が払う「インフラ費」と、お客様が払う「利用料」は別物です。用意するのは<strong>左側のインフラ費だけ</strong>です。</p>
+    <div class="flows">
+      <div class="flow out">
+        <span class="tag">支出</span>
+        <p class="who">運営（あなた）が払う</p>
+        <p>メール・データベース・ホスティング・ドメイン・AI のインフラ費。売上が立つ前でも発生する固定費はごくわずか。</p>
+      </div>
+      <div class="flow in">
+        <span class="tag">収入</span>
+        <p class="who">事業所（お客様）が払う</p>
+        <p>公開料5,000円＋月額。Stripe経由で入金され、Stripeが手数料3.6%を差し引きます。運営の初期出費ではありません。</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>立ち上げコスト早見表</h2>
+    <p class="section-sub">売上ゼロの状態でも発生する費用は、実質「Vercel＋ドメイン」だけです。</p>
+    <div class="tiles">
+      <div class="tile">
+        <p class="k">毎月の固定費</p>
+        <div class="v">約3,000<small> 円/月</small></div>
+        <p class="note">Vercel Pro（商用ホスティング）</p>
+      </div>
+      <div class="tile">
+        <p class="k">ドメイン</p>
+        <div class="v">約1,500<small> 円/年</small></div>
+        <p class="note">メール認証と公開の起点</p>
+      </div>
+      <div class="tile">
+        <p class="k">メール・DB・AI</p>
+        <div class="v">0<small> 円</small></div>
+        <p class="note">当面は各社の無料枠内</p>
+      </div>
+      <div class="tile">
+        <p class="k">決済手数料</p>
+        <div class="v">3.6<small> %</small></div>
+        <p class="note">売れた分だけ・固定費なし</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>サービス別の料金と準備作業</h2>
+    <p class="section-sub">各サービスであなたがすることは基本「アカウントを作ってキー（合言葉）をコピーして渡す」だけ。繋ぎ込みは開発側で行います。</p>
+
+    <!-- Resend -->
+    <div class="card">
+      <div class="card-head">
+        <span class="idx">1</span>
+        <h3>Resend</h3>
+        <span class="role">メール送受信</span>
+        <span class="pill star">最優先</span>
+        <span class="pill free">無料枠あり</span>
+      </div>
+      <div class="price-line">
+        <div><span class="lbl">無料枠</span><span class="amt">月3,000通・1日100通</span></div>
+        <div><span class="lbl">有料（Pro）</span><span class="amt">$20/月（約3,000円）＝月5万通</span></div>
+        <div><span class="lbl">立ち上げ時</span><span class="amt">無料枠で十分</span></div>
+      </div>
+      <p class="prep-title">あなたの準備作業</p>
+      <ul class="prep">
+        <li>アカウント作成（GitHubログインで可）</li>
+        <li><b>独自ドメインの認証</b>（DNSにSPF/DKIM/DMARCを追加）— これをしないと迷惑メール扱いされます</li>
+        <li>APIキーを発行して渡す</li>
+        <li>受信用サブドメインの設定（事業所からの返信を受け取るため）</li>
+      </ul>
+    </div>
+
+    <!-- Stripe -->
+    <div class="card">
+      <div class="card-head">
+        <span class="idx">2</span>
+        <h3>Stripe</h3>
+        <span class="role">決済</span>
+        <span class="pill fee">固定費なし・手数料のみ</span>
+      </div>
+      <div class="price-line">
+        <div><span class="lbl">初期・月額</span><span class="amt">0円</span></div>
+        <div><span class="lbl">手数料</span><span class="amt">国内カード 3.6%（消費税なし）</span></div>
+        <div><span class="lbl">例</span><span class="amt">月額3,000円 → 手数料108円</span></div>
+      </div>
+      <p class="prep-title">あなたの準備作業</p>
+      <ul class="prep">
+        <li>アカウント作成</li>
+        <li><b>本人確認・事業者審査</b>（合同会社の登記情報・銀行口座・代表者身分証）— 数日かかるので早めに着手</li>
+        <li>APIキー（公開・秘密）と Webhook署名シークレット を渡す</li>
+        <li>商品登録（公開料5,000円・月額プランの金額はあなたが決定）</li>
+      </ul>
+    </div>
+
+    <!-- Neon -->
+    <div class="card">
+      <div class="card-head">
+        <span class="idx">3</span>
+        <h3>Neon</h3>
+        <span class="role">データベース（Postgres）</span>
+        <span class="pill free">無料枠あり</span>
+      </div>
+      <div class="price-line">
+        <div><span class="lbl">無料枠</span><span class="amt">0.5GB・月100時間</span></div>
+        <div><span class="lbl">有料（Launch）</span><span class="amt">$0.106/時〜・月最低額なし</span></div>
+        <div><span class="lbl">立ち上げ時</span><span class="amt">無料枠で十分</span></div>
+      </div>
+      <p class="prep-title">あなたの準備作業</p>
+      <ul class="prep">
+        <li>アカウント作成（GitHubログインで可）</li>
+        <li>プロジェクトを作成し、接続文字列（DATABASE_URL）を渡す — これだけ</li>
+      </ul>
+    </div>
+
+    <!-- Vercel -->
+    <div class="card">
+      <div class="card-head">
+        <span class="idx">4</span>
+        <h3>Vercel</h3>
+        <span class="role">ホスティング（サイト公開）</span>
+        <span class="pill paid">唯一の必須固定費</span>
+      </div>
+      <div class="price-line">
+        <div><span class="lbl">無料(Hobby)</span><span class="amt">商用利用は禁止 → 使えない</span></div>
+        <div><span class="lbl">Pro</span><span class="amt">$20/月/人（約3,000円）</span></div>
+        <div><span class="lbl">立ち上げ時</span><span class="amt">Pro が必須</span></div>
+      </div>
+      <p class="prep-title">あなたの準備作業</p>
+      <ul class="prep">
+        <li>アカウント作成 → <b>Proプラン契約</b>（商用のため必須）</li>
+        <li>環境変数（各種APIキー）の登録 — 手順は用意します</li>
+        <li>独自ドメインを接続</li>
+      </ul>
+    </div>
+
+    <!-- Domain -->
+    <div class="card">
+      <div class="card-head">
+        <span class="idx">5</span>
+        <h3>独自ドメイン</h3>
+        <span class="role">例：kizuna-hp.jp</span>
+        <span class="pill star">これを最初に決める</span>
+      </div>
+      <div class="price-line">
+        <div><span class="lbl">費用</span><span class="amt">年 約1,500〜2,000円</span></div>
+        <div><span class="lbl">取得先</span><span class="amt">お名前.com / Cloudflare 等</span></div>
+        <div><span class="lbl">役割</span><span class="amt">メール認証とサイト公開の両方に必要</span></div>
+      </div>
+      <p class="prep-title">あなたの準備作業</p>
+      <ul class="prep">
+        <li>ドメイン名を決めて取得</li>
+        <li>これが決まらないと ①メール認証も ④公開も進められません — <b>着手の起点</b></li>
+      </ul>
+    </div>
+
+    <!-- AI -->
+    <div class="card">
+      <div class="card-head">
+        <span class="idx">6</span>
+        <h3>AI（編集エンジン）</h3>
+        <span class="role">Gemini / Anthropic</span>
+        <span class="pill free">当面0円</span>
+      </div>
+      <div class="price-line">
+        <div><span class="lbl">Gemini（稼働中）</span><span class="amt">無料枠で運用中・0円</span></div>
+        <div><span class="lbl">Anthropic（任意）</span><span class="amt">チャージで高品質版に切替・1編集 数円</span></div>
+        <div><span class="lbl">立ち上げ時</span><span class="amt">準備不要</span></div>
+      </div>
+      <p class="prep-title">あなたの準備作業</p>
+      <ul class="prep">
+        <li>当面<b>不要</b>（Gemini無料枠で動いています）</li>
+        <li>品質を上げたくなったら Anthropic に残高チャージ</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>月額コスト試算</h2>
+    <p class="section-sub">小規模スタートと、95都道府県へ本格営業する段階の比較。売上が立つまで固定費はほぼVercelとドメインだけです。</p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>サービス</th>
+            <th class="num-col">立ち上げ時</th>
+            <th class="num-col">スケール時</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Vercel Pro</td><td class="num-col">約3,000円</td><td class="num-col">3,000〜10,000円</td></tr>
+          <tr><td>Resend</td><td class="num-col">0円（無料枠）</td><td class="num-col">約3,000円</td></tr>
+          <tr><td>Neon</td><td class="num-col">0円（無料枠）</td><td class="num-col">数百〜1,000円</td></tr>
+          <tr><td>Stripe</td><td class="num-col">0円＋売上3.6%</td><td class="num-col">売上3.6%</td></tr>
+          <tr><td>ドメイン</td><td class="num-col">約1,500円/年</td><td class="num-col">同左</td></tr>
+          <tr><td>AI（Gemini）</td><td class="num-col">0円</td><td class="num-col">0円〜</td></tr>
+          <tr class="total"><td>月額のめやす</td><td class="num-col">約3,000円＋α</td><td class="num-col">約1万円＋手数料</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>準備チェックリスト</h2>
+    <p class="section-sub">準備には順番があります。上から進めてください。ドメインが起点、Stripe審査は時間がかかるので並行で早めに。</p>
+    <ol class="steps">
+      <li>
+        <div>
+          <p class="st">ドメイン名を決めて取得</p>
+          <p class="sd">例 <code>kizuna-hp.jp</code>。すべての起点。これが決まると次に進めます。</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p class="st">Resend：アカウント作成 → ドメイン認証（DNS）→ APIキー取得</p>
+          <p class="sd">営業メールの送受信基盤。ドメイン認証まで済ませて信頼性を確保。</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p class="st">Vercel：アカウント作成 → Proプラン契約</p>
+          <p class="sd">サイト公開先。商用のためProが必須。唯一の必須固定費。</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p class="st">Neon：アカウント作成 → 接続文字列取得</p>
+          <p class="sd">本番データベース。無料枠で開始できます。</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p class="st">Stripe：アカウント作成 → 事業者審査 → APIキー取得</p>
+          <p class="sd"><span class="warn">審査に数日かかるため、いちばん早めに着手</span>。登記情報・銀行口座・身分証を準備。</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p class="st">（任意）Anthropicに残高チャージ</p>
+          <p class="sd">AI編集の品質を上げたい場合のみ。当面はGemini無料枠で不要。</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout">
+      各サービスの<b>APIキー・接続文字列を渡していただければ、繋ぎ込みは開発側で行います</b>。あなたの作業は「アカウントを作ってキーをコピーして渡す」だけです。契約を待つ間に、営業メールへ添付する施設HPの<b>スクリーンショット自動生成</b>は先行して進められます。
+    </div>
+  </section>
+
+  <footer>
+    <p>金額は各社の公表価格（2026年8月時点）に基づく概算です。為替・プラン改定で変動します。契約前に各社の最新料金ページで確認してください。</p>
+    <div class="src">
+      <span>出典：Resend / Neon / Vercel 各料金ページ、Stripe（国内カード手数料 3.6%）、PAY.JP まとめ</span>
+    </div>
+  </footer>
+</div>

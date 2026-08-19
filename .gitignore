@@ -1,0 +1,22 @@
+# 依存・ビルド成果物
+node_modules/
+.next/
+out/
+build/
+coverage/
+*.tsbuildinfo
+
+# 秘密情報・環境変数（.env.example は追跡する）
+.env
+.env.local
+.env.*.local
+
+# 収集データ（事業所の連絡先＝個人情報を含む。再取得可能なため追跡しない）
+WAM_NET_就労継続支援B型_収集/
+
+# 生成物
+app/screenshots/
+
+# OS / エディタ
+.DS_Store
+Thumbs.db

@@ -1,0 +1,230 @@
+<title>メールと決済の準備</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @page { size: A4; margin: 15mm 15mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    margin: 0;
+    background: #ffffff;
+    color: #14202b;
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic",
+      "Noto Sans JP", "Meiryo", sans-serif;
+    line-height: 1.65;
+    font-feature-settings: "palt" 1;
+    font-size: 10pt;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 4mm 0 0; }
+
+  .eyebrow {
+    font-size: 8pt; letter-spacing: .2em; font-weight: 700;
+    color: #1f6f4d; text-transform: uppercase; margin: 0 0 4px;
+  }
+  h1 {
+    font-size: 19pt; font-weight: 800; line-height: 1.25;
+    margin: 0 0 6px; color: #12202b; letter-spacing: .01em;
+  }
+  .lede { font-size: 9.5pt; color: #45525c; margin: 0 0 4px; max-width: 44em; }
+  .meta { font-size: 8.5pt; color: #7a8792; margin-top: 8px; }
+  header { border-bottom: 2px solid #1f6f4d; padding-bottom: 12px; margin-bottom: 16px; }
+
+  h2 {
+    font-size: 13pt; font-weight: 800; margin: 0 0 8px;
+    display: flex; align-items: center; gap: 8px; color: #12202b;
+  }
+  h2 .idx {
+    font-variant-numeric: tabular-nums; font-weight: 800; font-size: 10pt;
+    color: #ffffff; background: #1f6f4d;
+    width: 22px; height: 22px; border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  h2 .role { font-size: 9pt; color: #7a8792; font-weight: 600; }
+
+  section { margin-bottom: 16px; break-inside: avoid; }
+  .card { border: 1px solid #d9e0e4; border-radius: 10px; padding: 13px 15px; background: #fbfcfb; break-inside: avoid; }
+
+  .price {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    margin: 0 0 11px; padding-bottom: 11px; border-bottom: 1px dashed #c7d0d5;
+  }
+  .price .lbl { font-size: 7.5pt; letter-spacing: .04em; color: #8a97a1; display: block; }
+  .price .amt { font-size: 9.5pt; font-weight: 800; font-variant-numeric: tabular-nums; color: #14202b; }
+
+  .block-title {
+    font-size: 8pt; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+    color: #1f6f4d; margin: 0 0 6px; display: flex; align-items: center; gap: 6px;
+  }
+  .subblock { margin-bottom: 11px; }
+  .subblock:last-child { margin-bottom: 0; }
+
+  ul.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+  ul.list li { display: flex; gap: 7px; font-size: 9pt; color: #3c4952; align-items: flex-start; }
+  ul.list li::before {
+    content: ""; flex: none; margin-top: 6px; width: 4.5px; height: 4.5px;
+    border-radius: 1.5px; background: #93a0a8;
+  }
+  ul.list li b { color: #14202b; font-weight: 700; }
+
+  ol.howto { margin: 0; padding: 0; list-style: none; counter-reset: h; display: grid; gap: 4px; }
+  ol.howto li {
+    counter-increment: h; display: grid; grid-template-columns: auto 1fr; gap: 8px;
+    font-size: 9pt; color: #3c4952; align-items: start;
+  }
+  ol.howto li::before {
+    content: counter(h); font-variant-numeric: tabular-nums; font-weight: 800; font-size: 7.5pt;
+    color: #1f6f4d; background: #e3f0e8; width: 16px; height: 16px; border-radius: 4px;
+    display: inline-flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  ol.howto li b { color: #14202b; font-weight: 700; }
+
+  .handoff {
+    background: #eef4f8; border: 1px solid #cfe0ea; border-radius: 7px;
+    padding: 8px 11px; font-size: 8.7pt; color: #24404f; margin-top: 10px;
+  }
+  .handoff b { color: #14364a; }
+
+  .warn { color: #97650f; font-weight: 700; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: .88em; background: #eef2ec; padding: 1px 5px; border-radius: 4px; }
+
+  .flow-note {
+    background: #e9f3ec; border: 1px solid #bcdcc7; border-radius: 8px;
+    padding: 9px 13px; font-size: 9pt; color: #234; margin-bottom: 16px;
+  }
+  .flow-note b { color: #185a3e; }
+
+  .steps { counter-reset: s; list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+  .steps > li {
+    counter-increment: s; display: grid; grid-template-columns: auto 1fr; gap: 10px;
+    border: 1px solid #d9e0e4; border-radius: 8px; padding: 8px 12px; background: #fff; break-inside: avoid;
+  }
+  .steps > li::before {
+    content: counter(s); font-variant-numeric: tabular-nums; font-weight: 800; font-size: 9pt;
+    color: #fff; background: #1f6f4d; width: 21px; height: 21px; border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .steps .st { font-weight: 700; margin: 0; font-size: 9.5pt; }
+  .steps .sd { margin: 2px 0 0; color: #45525c; font-size: 8.6pt; }
+
+  footer { margin-top: 16px; padding-top: 10px; border-top: 1px solid #d9e0e4; font-size: 7.8pt; color: #8a97a1; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">合同会社絆 &middot; AI-HP サービス</p>
+    <h1>メールと決済の準備</h1>
+    <p class="lede">「メール送受信（Resend）」と「決済（Stripe）」について、料金・必要なもの・アカウント作成手順・開発者へ渡すものをまとめました。金額は2026年8月時点の公表価格（$1≒155円換算）です。</p>
+    <p class="meta">作成 2026-08-14 ／ 対象：運営（合同会社絆）が用意する分</p>
+  </header>
+
+  <div class="flow-note">
+    <b>お金の流れ</b>：Resend は運営が払うメール費用（当面 無料枠内）。Stripe は固定費ゼロで、お客様が払う公開料・月額から手数料3.6%だけが差し引かれます。
+  </div>
+
+  <!-- ===================== RESEND ===================== -->
+  <section>
+    <h2><span class="idx">1</span>Resend<span class="role">メール送受信</span></h2>
+    <div class="card">
+      <div class="price">
+        <div><span class="lbl">無料枠</span><span class="amt">月3,000通・1日100通</span></div>
+        <div><span class="lbl">有料（Pro）</span><span class="amt">$20/月（約3,000円）</span></div>
+        <div><span class="lbl">立ち上げ時</span><span class="amt">無料枠で十分</span></div>
+      </div>
+
+      <div class="subblock">
+        <p class="block-title">必要なもの</p>
+        <ul class="list">
+          <li>メールアドレス（または GitHub アカウント）</li>
+          <li><b>独自ドメイン</b>（例 <code>kizuna-hp.jp</code>）</li>
+          <li>ドメインの <b>DNS 設定権限</b>（お名前.com 等の管理画面にログインできること）</li>
+          <li>クレジットカード（有料プランに上げるときのみ）</li>
+        </ul>
+      </div>
+
+      <div class="subblock">
+        <p class="block-title">アカウント作成手順</p>
+        <ol class="howto">
+          <li><span><b>resend.com</b> にアクセスし「Sign up」（GitHub かメールで登録）</span></li>
+          <li><span>ダッシュボードの <b>Domains → Add Domain</b> でドメインを入力</span></li>
+          <li><span>表示される <b>DNS レコード（SPF / DKIM / MX / DMARC）</b> を、ドメイン管理画面（お名前.com 等）にコピーして登録</span></li>
+          <li><span>Resend に戻り <b>Verify</b> を押す（反映まで数分〜数時間）</span></li>
+          <li><span><b>API Keys → Create API Key</b> でキーを発行しコピー</span></li>
+          <li><span>返信受信を使う場合は <b>MX レコードと Webhook</b> を設定（開発側で案内します）</span></li>
+        </ol>
+      </div>
+
+      <div class="handoff">
+        <b>開発者に渡すもの：</b>① API キー　② 認証済みドメイン名　③（受信を使う場合）Webhook の設定情報
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STRIPE ===================== -->
+  <section>
+    <h2><span class="idx">2</span>Stripe<span class="role">決済</span></h2>
+    <div class="card">
+      <div class="price">
+        <div><span class="lbl">初期・月額</span><span class="amt">0円</span></div>
+        <div><span class="lbl">手数料</span><span class="amt">国内カード 3.6%（消費税なし）</span></div>
+        <div><span class="lbl">例</span><span class="amt">月額3,000円 → 108円</span></div>
+      </div>
+
+      <div class="subblock">
+        <p class="block-title">必要なもの</p>
+        <ul class="list">
+          <li>メールアドレス</li>
+          <li><b>事業者情報</b>：商号（合同会社絆）・所在地・法人番号（登記情報）</li>
+          <li><b>代表者の本人確認書類</b>（運転免許証／マイナンバーカード 等）</li>
+          <li><b>入金先の銀行口座</b>（法人口座が望ましい）</li>
+          <li>事業内容の説明・サービスのウェブサイト URL</li>
+        </ul>
+      </div>
+
+      <div class="subblock">
+        <p class="block-title">アカウント作成手順</p>
+        <ol class="howto">
+          <li><span><b>stripe.com</b> で「今すぐ始める」→ メールとパスワードで登録・メール認証</span></li>
+          <li><span>ダッシュボードで <b>事業者情報</b>（法人/個人の別・商号・所在地・法人番号）を入力</span></li>
+          <li><span><b>代表者情報と本人確認書類</b>をアップロード</span></li>
+          <li><span><b>入金先の銀行口座</b>を登録</span></li>
+          <li><span>事業内容・ウェブサイト URL を入力し <b>審査を申請</b>（<span class="warn">承認まで数日</span>）</span></li>
+          <li><span><b>商品と価格</b>を登録（公開料5,000円の一回払い・月額サブスク）</span></li>
+          <li><span><b>開発者 → API キー</b>で公開キー・シークレットキーを取得、<b>Webhook</b> を追加して署名シークレットを取得</span></li>
+        </ol>
+      </div>
+
+      <div class="handoff">
+        <b>開発者に渡すもの：</b>① 公開可能キー　② シークレットキー　③ Webhook 署名シークレット　④ 登録した価格 ID
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ORDER ===================== -->
+  <section>
+    <h2>準備の順番</h2>
+    <ol class="steps">
+      <li>
+        <div>
+          <p class="st">独自ドメインを取得</p>
+          <p class="sd">例 <code>kizuna-hp.jp</code>。Resend のメール認証に必要な起点。年 約1,500円。</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p class="st">Resend：登録 → ドメイン認証 → APIキー取得</p>
+          <p class="sd">営業メールの送受信基盤。無料枠で開始できます。</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <p class="st">Stripe：登録 → 事業者審査 → APIキー・商品登録</p>
+          <p class="sd">審査に数日かかるため、ドメイン取得と並行して早めに着手。</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <footer>
+    金額・手順は各社の公表情報（2026年8月時点）に基づく概算です。為替・プラン改定・画面変更で変わる場合があります。契約前に各社の最新ページで確認してください。／ 出典：Resend・Stripe 各公式、PAY.JP まとめ。
+  </footer>
+</div>

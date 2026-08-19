@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>絆 AI-HP 進捗レポート 2026-08-12</title>
+<style>
+  :root {
+    --paper: #FFFFFF;
+    --ink: #111111;
+    --muted: #4B4F57;
+    --line: #D7DBE3;
+    --navy: #1B3A6B;
+    --navy-deep: #12294D;
+    --navy-soft: #EDF1F8;
+    --grey-soft: #F1F2F4;
+
+    --font-sans: "Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Meiryo", system-ui, sans-serif;
+    --font-serif: "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+    --font-mono: "Consolas", "SFMono-Regular", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); }
+  body {
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 10.5pt;
+    line-height: 1.7;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page { width: 190mm; margin: 0 auto; padding: 0 2mm; }
+
+  /* ---- Header ---- */
+  header {
+    border-top: 4px solid var(--navy);
+    padding-top: 14px;
+    margin-top: 4px;
+    margin-bottom: 20px;
+  }
+  .eyebrow {
+    font-family: var(--font-serif);
+    font-size: 9pt; letter-spacing: .16em; color: var(--navy);
+    margin: 0 0 8px;
+  }
+  h1 {
+    font-size: 23pt; line-height: 1.25; font-weight: 800;
+    letter-spacing: -.01em; margin: 0 0 10px; color: var(--ink);
+  }
+  h1 .accent { color: var(--navy); }
+  .lede { font-size: 10.5pt; color: var(--muted); margin: 0; max-width: 60ch; }
+  .datebar {
+    display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline;
+    margin-top: 14px; font-family: var(--font-mono); font-size: 9pt; color: var(--muted);
+  }
+  .datebar .big { font-family: var(--font-serif); font-size: 12pt; color: var(--ink); letter-spacing: .03em; }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 3px;
+    background: var(--navy); color: #fff; font-weight: 700; font-size: 8.5pt;
+    font-family: var(--font-sans); letter-spacing: .02em;
+  }
+
+  /* ---- Stats ---- */
+  .stats { display: flex; gap: 8px; margin-top: 18px; }
+  .stat { flex: 1; border: 1px solid var(--line); border-radius: 6px; padding: 11px 12px 9px; }
+  .stat .num {
+    font-family: var(--font-mono); font-size: 20pt; font-weight: 700; line-height: 1;
+    color: var(--navy); font-variant-numeric: tabular-nums;
+  }
+  .stat .num .u { font-size: 9pt; color: var(--muted); font-weight: 600; margin-left: 2px; }
+  .stat .lbl { margin-top: 6px; font-size: 8pt; color: var(--muted); line-height: 1.4; }
+
+  /* ---- Sections ---- */
+  section { margin-top: 26px; }
+  .sec-eyebrow { font-family: var(--font-serif); font-size: 8.5pt; letter-spacing: .14em; color: var(--navy); margin: 0 0 4px; }
+  h2 { font-size: 15pt; font-weight: 800; margin: 0 0 4px; color: var(--ink); letter-spacing: -.01em; }
+  .sec-sub { color: var(--muted); margin: 0 0 14px; font-size: 9.5pt; max-width: 60ch; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 22px 0 0; }
+
+  /* ---- Cards ---- */
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    border: 1px solid var(--line); border-radius: 8px; padding: 13px 16px;
+    display: grid; grid-template-columns: 40px 1fr; gap: 3px 15px;
+    page-break-inside: avoid; break-inside: avoid;
+  }
+  .card .idx {
+    grid-row: 1 / span 3; width: 40px; height: 40px; border-radius: 8px;
+    background: var(--navy-soft); color: var(--navy);
+    font-family: var(--font-serif); font-size: 18pt; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card .ph {
+    display: inline-block; font-family: var(--font-mono); font-size: 7.5pt; font-weight: 700;
+    color: var(--navy); background: var(--navy-soft); padding: 1px 7px; border-radius: 3px; margin-bottom: 5px;
+    letter-spacing: .03em;
+  }
+  .card h3 { margin: 0 0 5px; font-size: 11.5pt; font-weight: 800; color: var(--ink); }
+  .card .what { margin: 0 0 8px; font-size: 9.5pt; }
+  .card .what b, .card .why b { font-weight: 700; }
+  .card .why {
+    margin: 0; padding: 8px 11px; background: var(--grey-soft); border-radius: 5px;
+    border-left: 3px solid var(--navy); font-size: 9pt; color: var(--muted);
+  }
+  .card .why b { color: var(--ink); }
+
+  /* ---- Product shot ---- */
+  .shot { margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; page-break-inside: avoid; break-inside: avoid; }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot figcaption { font-size: 8.2pt; color: var(--muted); padding: 7px 13px; background: var(--grey-soft); border-top: 1px solid var(--line); }
+  .shot-points { display: flex; gap: 8px; margin-top: 10px; page-break-inside: avoid; break-inside: avoid; }
+  .shot-points > div { flex: 1; border: 1px solid var(--line); border-left: 3px solid var(--navy); border-radius: 6px; padding: 9px 11px; }
+  .shot-points b { display: block; font-size: 9pt; color: var(--navy); margin-bottom: 2px; }
+  .shot-points span { font-size: 8.2pt; color: var(--muted); line-height: 1.5; }
+
+  /* ---- Diagram ---- */
+  .diagram {
+    border: 1px solid var(--line); border-radius: 8px; padding: 14px 12px 8px;
+    page-break-inside: avoid; break-inside: avoid;
+  }
+  .diagram svg { display: block; width: 100%; height: auto; }
+  .flow-note { margin: 10px 2px 0; font-size: 8.7pt; color: var(--muted); }
+  .flow-note b { color: var(--ink); }
+  .flow-note .mk { color: var(--navy); font-weight: 700; }
+
+  /* ---- Roadmap ---- */
+  .road { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .phase {
+    display: grid; grid-template-columns: 20px 1fr auto; gap: 12px; align-items: center;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+    page-break-inside: avoid; break-inside: avoid;
+  }
+  .phase:last-child { border-bottom: 0; }
+  .phase .dot { width: 12px; height: 12px; border-radius: 50%; margin: 0 auto; }
+  .phase.done .dot { background: var(--navy); }
+  .phase.wait .dot { background: #fff; border: 2px solid #B9BFC9; }
+  .phase .name { font-weight: 700; font-size: 9.5pt; }
+  .phase .name span { display: block; font-weight: 400; font-size: 8.3pt; color: var(--muted); margin-top: 0; }
+  .phase .tag { font-family: var(--font-mono); font-size: 7.5pt; font-weight: 700; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .phase.done .tag { background: var(--navy-soft); color: var(--navy); }
+  .phase.wait .tag { background: var(--grey-soft); color: var(--muted); }
+
+  /* ---- Next ---- */
+  .next { display: flex; gap: 8px; }
+  .next .item { flex: 1; border: 1px solid var(--line); border-top: 3px solid var(--navy); border-radius: 6px; padding: 11px 12px; page-break-inside: avoid; }
+  .next .item h4 { margin: 0 0 4px; font-size: 10pt; font-weight: 800; color: var(--ink); }
+  .next .item p { margin: 0; font-size: 8.6pt; color: var(--muted); }
+
+  footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 8pt; }
+  footer .mono { font-family: var(--font-mono); }
+
+  .avoid { page-break-inside: avoid; break-inside: avoid; }
+
+  @page { size: A4; margin: 14mm 12mm; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="eyebrow">— プロジェクト進捗レポート</p>
+    <h1><span class="accent">絆</span> AI-HP作成サービス ／ 開発の進みぐあい</h1>
+    <p class="lede">就労継続支援B型の事業所が「HTMLを書く」のではなく「AIに話しかけて」ホームページを直せる ── そのサービスを作っています。今日は、その<b>心臓部が“本物のAI”で初めて動いた</b>日です。</p>
+    <div class="datebar">
+      <span class="big">2026年8月12日（水）</span>
+      <span class="badge">本日 5項目 完成</span>
+      <span>合同会社 絆</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="num">5<span class="u">項目</span></div><div class="lbl">今日かたちになった<br>機能・改善</div></div>
+      <div class="stat"><div class="num">91<span class="u">件</span></div><div class="lbl">自動テスト<br>すべて合格</div></div>
+      <div class="stat"><div class="num">0<span class="u">件</span></div><div class="lbl">AIの指示ミス<br>（実証で不採用ゼロ）</div></div>
+      <div class="stat"><div class="num">7<span class="u">/7</span></div><div class="lbl">主要フェーズの<br>中核が完成</div></div>
+    </div>
+  </header>
+
+  <!-- 実物 -->
+  <section class="avoid">
+    <p class="sec-eyebrow">PRODUCT ・ 実際にできているホームページ</p>
+    <h2>いま、こんなHPが自動でできています</h2>
+    <p class="sec-sub">事業所の情報を取り込むと、AIがこの品質のHPを“下書き”として自動生成します。下は営業提案用のサンプル「ひだまりワーク奈良」です。</p>
+    <figure class="shot">
+      <img src="hp-preview.jpg" alt="AIが自動生成したホームページのサンプル（ひだまりワーク奈良）">
+      <figcaption>▲ AIが自動生成したサンプルHP。写真・レイアウト・見出しは全事業所で共通のテンプレート。住所・電話などの事実情報だけが事業所ごとに自動で差し替わります。</figcaption>
+    </figure>
+    <div class="shot-points">
+      <div><b>確定した事実は自動反映</b><span>名称・住所・電話・アクセスなど、取り込んだ情報はそのまま掲載されます。</span></div>
+      <div><b>未確定は「準備中」で断定しない</b><span>送迎・営業時間・昼食などは、あとから事業所がAIチャットで埋めていきます。</span></div>
+      <div><b>誰が作っても同じ品質</b><span>デザインは共通なので、どの事業所でも見栄えのする仕上がりになります。</span></div>
+    </div>
+  </section>
+
+  <!-- 今日やったこと -->
+  <section>
+    <p class="sec-eyebrow">TODAY ・ 今日できるようになったこと</p>
+    <h2>今日、5つの前進がありました</h2>
+    <p class="sec-sub">むずかしい言葉を使わずに、「何をやったか」と「なぜ大事か」をセットで並べています。</p>
+
+    <div class="cards">
+      <article class="card">
+        <div class="idx">1</div>
+        <div>
+          <span class="ph">Phase 3 ・ AI編集エンジン</span>
+          <h3>AIが“本物”で初めて動いた（サービスの心臓部）</h3>
+          <p class="what">「営業時間を9〜16時に」「送迎あり」「昼食は500円」「配色を緑に」── こうした<b>ふつうの日本語の指示</b>を、AIが正しく読み取って、ホームページのデータを自動で書き換え・反映することを実際に確認しました。</p>
+          <p class="why"><b>意味：</b> これがこのサービスの一番の“売り”です。事業所さんはコードを一切さわらず、話しかけるだけでHPを直せます。今は無料で使えるAIで運用を開始しています。</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="idx">2</div>
+        <div>
+          <span class="ph">Phase 3 ・ 品質改善</span>
+          <h3>AIへの“指示書”を精密にして、ミスをゼロに</h3>
+          <p class="what">AIに渡す指示書（プロンプト）に、「どんな形で書き換えを提案すべきか」を項目ごとに正確に書き加えました。これが無いとAIが自己流の形で答えてしまい、うまく反映できないことがありました。</p>
+          <p class="why"><b>意味：</b> 指示のブレが無くなり、<b>実証テストで不採用ゼロ</b>を達成。この改善はGeminiにもAnthropicにも共通で効きます。</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="idx">3</div>
+        <div>
+          <span class="ph">Phase 5b ・ 自動メール</span>
+          <h3>14日間おためし中の“リマインド自動送信”</h3>
+          <p class="what">無料おためし期間中に、<b>3日前・前日・当日</b>のタイミングで自動でお知らせメールを送る仕組みを作りました。同じ人に二重送信しない工夫（冪等）や、配信停止・未登録の方を自動でスキップする処理も入っています。</p>
+          <p class="why"><b>意味：</b> 手作業なしで“おためし→契約”の後押しができます。実際の送信は、メール会社の契約が決まり次第つなぐだけの状態です。</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="idx">4</div>
+        <div>
+          <span class="ph">Phase 6b ・ 公開前チェック</span>
+          <h3>「この内容で公開してOK」を確認する画面</h3>
+          <p class="what">事業所さんが公開ボタンを押す前に、<b>5項目のチェックリスト</b>で掲載内容を最終確認できる画面を作りました。全部にチェックが入って初めて公開に進めます。</p>
+          <p class="why"><b>意味：</b> 「まちがった内容のまま公開してしまった」を防ぎます。確認した記録もきちんと残ります。</p>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="idx">5</div>
+        <div>
+          <span class="ph">Phase 7 ・ 管理画面</span>
+          <h3>成果がひと目でわかる管理ダッシュボード</h3>
+          <p class="what">都道府県ごとの成果（KPI）、<b>見込みの高い事業所ランキング（本命スコア）</b>、決済に失敗した先の一覧などを、1つの画面でまとめて見られるようにしました。ログインパスワードで保護しています。</p>
+          <p class="why"><b>意味：</b> 「どこに営業を集中すべきか」が数字で見えます。<b>91件の自動テストすべて合格</b>し、動作も実データで確認済みです。</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 仕組み図 -->
+  <section class="avoid">
+    <p class="sec-eyebrow">HOW IT WORKS ・ サービスの仕組み</p>
+    <h2>お客さまが体験する流れ</h2>
+    <p class="sec-sub">今日動いた「AI編集」は、この流れの ③④ にあたる中心部分です。全体像で見ると位置づけが分かります。</p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 900 300" role="img" aria-label="サービスの5ステップの流れ図">
+        <defs>
+          <marker id="arw" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#7A828F"></path>
+          </marker>
+          <marker id="arwLoop" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#1B3A6B"></path>
+          </marker>
+        </defs>
+
+        <g stroke="#7A828F" stroke-width="2" fill="none">
+          <line x1="172" y1="175" x2="196" y2="175" marker-end="url(#arw)"></line>
+          <line x1="340" y1="175" x2="364" y2="175" marker-end="url(#arw)"></line>
+          <line x1="508" y1="175" x2="532" y2="175" marker-end="url(#arw)"></line>
+          <line x1="676" y1="175" x2="700" y2="175" marker-end="url(#arw)"></line>
+        </g>
+
+        <path d="M370,120 C360,86 270,86 262,118" fill="none" stroke="#1B3A6B" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arwLoop)"></path>
+        <text x="316" y="78" text-anchor="middle" font-family="Consolas, monospace" font-size="12" fill="#1B3A6B" font-weight="700">数回くり返す（無料3回）</text>
+
+        <g font-family="'Yu Gothic', sans-serif">
+          <!-- 1 -->
+          <rect x="20" y="120" width="152" height="110" rx="12" fill="#F1F2F4" stroke="#D7DBE3"></rect>
+          <circle cx="46" cy="146" r="14" fill="#1B3A6B"></circle>
+          <text x="46" y="151" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">1</text>
+          <text x="96" y="182" text-anchor="middle" font-size="14" font-weight="700" fill="#111">営業メール</text>
+          <text x="96" y="203" text-anchor="middle" font-size="11.5" fill="#4B4F57">プレビュー</text>
+          <text x="96" y="219" text-anchor="middle" font-size="11.5" fill="#4B4F57">リンク付き</text>
+          <!-- 2 -->
+          <rect x="188" y="120" width="152" height="110" rx="12" fill="#F1F2F4" stroke="#D7DBE3"></rect>
+          <circle cx="214" cy="146" r="14" fill="#1B3A6B"></circle>
+          <text x="214" y="151" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">2</text>
+          <text x="264" y="182" text-anchor="middle" font-size="14" font-weight="700" fill="#111">自然文で返信</text>
+          <text x="264" y="203" text-anchor="middle" font-size="11.5" fill="#4B4F57">「ここ直して」</text>
+          <text x="264" y="219" text-anchor="middle" font-size="11.5" fill="#4B4F57">と書くだけ</text>
+          <!-- 3 -->
+          <rect x="356" y="120" width="152" height="110" rx="12" fill="#EDF1F8" stroke="#1B3A6B" stroke-width="2"></rect>
+          <circle cx="382" cy="146" r="14" fill="#1B3A6B"></circle>
+          <text x="382" y="151" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">3</text>
+          <text x="432" y="182" text-anchor="middle" font-size="14" font-weight="800" fill="#111">AIが安全に</text>
+          <text x="432" y="203" text-anchor="middle" font-size="11.5" fill="#4B4F57">自動修正して</text>
+          <text x="432" y="219" text-anchor="middle" font-size="11.5" fill="#4B4F57">自動返信</text>
+          <!-- 4 -->
+          <rect x="524" y="120" width="152" height="110" rx="12" fill="#EDF1F8" stroke="#1B3A6B" stroke-width="2"></rect>
+          <circle cx="550" cy="146" r="14" fill="#1B3A6B"></circle>
+          <text x="550" y="151" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">4</text>
+          <text x="600" y="182" text-anchor="middle" font-size="14" font-weight="800" fill="#111">リンク先でも</text>
+          <text x="600" y="203" text-anchor="middle" font-size="11.5" fill="#4B4F57">AIチャット</text>
+          <text x="600" y="219" text-anchor="middle" font-size="11.5" fill="#4B4F57">編集</text>
+          <!-- 5 -->
+          <rect x="692" y="120" width="152" height="110" rx="12" fill="#F1F2F4" stroke="#D7DBE3"></rect>
+          <circle cx="718" cy="146" r="14" fill="#12294D"></circle>
+          <text x="718" y="151" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">5</text>
+          <text x="768" y="176" text-anchor="middle" font-size="14" font-weight="700" fill="#111">14日体験</text>
+          <text x="768" y="196" text-anchor="middle" font-size="11.5" fill="#4B4F57">→ 5,000円で公開</text>
+          <text x="768" y="214" text-anchor="middle" font-size="11.5" fill="#4B4F57">→ 月額</text>
+        </g>
+
+        <text x="432" y="270" text-anchor="middle" font-family="'Yu Mincho', serif" font-size="14" fill="#1B3A6B" font-weight="700">③④ ＝ 今日“本物のAI”で動いた中心部分</text>
+      </svg>
+    </div>
+
+    <p class="flow-note"><span class="mk">◆ 安全のしくみ：</span> AIは自由に何でも書き換えるのではなく、あらかじめ決めた「操作メニュー」の範囲でしか動けません。他の事業所のデータや公開状態など、触ってはいけない所には原理的に手が届かない設計です。</p>
+  </section>
+
+  <!-- ロードマップ -->
+  <section>
+    <p class="sec-eyebrow">ROADMAP ・ 全体の進みぐあい</p>
+    <h2>プロジェクト全体のチェックリスト</h2>
+    <p class="sec-sub"><b style="color:var(--navy);">● 濃紺</b> ＝ 中核が完成ずみ。 <b style="color:#8A909B;">○ 白</b> ＝ 外部サービスの契約待ち（つなぐだけ）。</p>
+
+    <div class="road">
+      <div class="phase done"><div class="dot"></div><div class="name">Phase 1 ・ 基盤／データ取り込み<span>奈良県230件を取り込み済み・重複防止も検証ずみ</span></div><span class="tag">完成</span></div>
+      <div class="phase done"><div class="dot"></div><div class="name">Phase 2 ・ ホームページ自動生成<span>共通テンプレ＋事業所ごとのデータで下書きを自動生成</span></div><span class="tag">完成</span></div>
+      <div class="phase done"><div class="dot"></div><div class="name">Phase 3 ・ AI編集エンジン（心臓部）<span>本日、本物のAIで動作を実証・指示ミスゼロ</span></div><span class="tag">完成 / 本日</span></div>
+      <div class="phase done"><div class="dot"></div><div class="name">Phase 4 ・ マジックリンク編集画面<span>左チャット・右プレビューの編集ページ</span></div><span class="tag">完成</span></div>
+      <div class="phase done"><div class="dot"></div><div class="name">Phase 5 ・ メール返信ループ<span>受信→AI修正→自動返信の中核（無料3回まで）</span></div><span class="tag">完成</span></div>
+      <div class="phase done"><div class="dot"></div><div class="name">Phase 5b ・ おためし通知の自動送信<span>3日前・前日・当日リマインド／本日完成</span></div><span class="tag">完成 / 本日</span></div>
+      <div class="phase done"><div class="dot"></div><div class="name">Phase 6 ・ 課金と公開の状態管理<span>14日体験→決済成功で公開→解約後も静的公開は継続</span></div><span class="tag">完成</span></div>
+      <div class="phase done"><div class="dot"></div><div class="name">Phase 6b ・ 公開前チェック画面<span>5項目チェックで誤公開を防止／本日完成</span></div><span class="tag">完成 / 本日</span></div>
+      <div class="phase done"><div class="dot"></div><div class="name">Phase 7 ・ 管理ダッシュボード<span>都道府県別KPI・本命スコア・決済失敗一覧／本日完成</span></div><span class="tag">完成 / 本日</span></div>
+      <div class="phase wait"><div class="dot"></div><div class="name">Phase 5c ・ メール実配信＋スクショ＋営業<span>メール会社（Resend等）の契約が決まり次第つなぐ</span></div><span class="tag">契約待ち</span></div>
+      <div class="phase wait"><div class="dot"></div><div class="name">Phase 6c ・ Stripe実接続<span>実際のカード決済をつなぐ</span></div><span class="tag">契約待ち</span></div>
+      <div class="phase wait"><div class="dot"></div><div class="name">公開・運用（デプロイ）<span>Neon／Vercel＋独自ドメインで本番公開</span></div><span class="tag">準備待ち</span></div>
+    </div>
+  </section>
+
+  <!-- 次にやること -->
+  <section class="avoid">
+    <p class="sec-eyebrow">NEXT ・ 次に決めること</p>
+    <h2>先に進むために必要な“外部サービスの契約”</h2>
+    <p class="sec-sub">仕組みはほぼ完成しています。あとは下の3つを決めれば、実際の営業・課金・公開に進めます。</p>
+    <div class="next">
+      <div class="item"><h4>① メール送受信の会社</h4><p>営業メールの配信と返信の受け取りに使います（Resend／SendGrid／Postmark 等）。差し込むだけの状態です。</p></div>
+      <div class="item"><h4>② 決済（Stripe）</h4><p>カード登録・14日体験・5,000円公開・月額課金を実際に動かす接続。ロジックは完成ずみ。</p></div>
+      <div class="item"><h4>③ 本番の公開先</h4><p>ホスティング（Neon／Vercel）と独自ドメイン。ここが決まればお客さまに公開できます。</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <p><b>絆 AI-HP作成サービス</b> ／ 進捗レポート・2026年8月12日時点</p>
+    <p class="mono">品質の状況： 自動テスト 91件すべて合格。主要機能の動作を実データで確認ずみ。</p>
+  </footer>
+
+</div>
+</body>
+</html>
