@@ -9,3 +9,6 @@ next-env.d.ts
 coverage/
 prisma/*.db
 .DS_Store
+
+.vercel
+.env*
