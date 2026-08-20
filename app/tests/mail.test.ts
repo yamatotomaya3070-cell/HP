@@ -1,11 +1,10 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { buildReplyTo, extractReplyToken } from "@/server/mail/replyAddress.js";
+import { buildReplyTo, extractReplyToken, verifyReplyToken } from "@/server/mail/replyAddress.js";
 import { normalizeInbound, MailProviderError } from "@/server/mail/provider.js";
 import {
   composeAppliedReply,
   composeLimitReply,
 } from "@/server/mail/compose.js";
-import { verifyToken } from "@/lib/tokens.js";
 
 beforeAll(() => {
   process.env.TOKEN_SIGNING_SECRET = "test-secret-please-use-a-long-random-value";
@@ -19,15 +18,45 @@ describe("Reply-To アドレス", () => {
     expect(addr).toMatch(/^reply\+.+@reply\.example\.com$/);
     const token = extractReplyToken([addr]);
     expect(token).toBeTruthy();
-    const v = verifyToken(token as string, "reply");
+    const v = verifyReplyToken(token as string);
     expect(v.ok).toBe(true);
     if (v.ok) expect(v.facilityId).toBe("fac_abc");
+  });
+
+  it("ローカル部（@より前）が RFC 5321 の 64 文字以内に収まる（実 cuid 長でも）", () => {
+    // 実際の Facility.id は 25 文字の cuid。汎用トークンだと 130 文字超で送信が 422 になる回帰を防ぐ。
+    const addr = buildReplyTo("cmszr74cg0002dhaovtx7v6v3");
+    const localPart = addr.split("@")[0];
+    expect(localPart.length).toBeLessThanOrEqual(64);
+    const token = extractReplyToken([addr]);
+    const v = verifyReplyToken(token as string);
+    expect(v.ok).toBe(true);
+    if (v.ok) expect(v.facilityId).toBe("cmszr74cg0002dhaovtx7v6v3");
+  });
+
+  it("改竄された署名は bad_signature で拒否する", () => {
+    const addr = buildReplyTo("fac_abc");
+    const token = extractReplyToken([addr]) as string;
+    const tampered = token.slice(0, -2) + (token.endsWith("aa") ? "bb" : "aa");
+    const v = verifyReplyToken(tampered);
+    expect(v.ok).toBe(false);
+  });
+
+  it("期限切れトークンは expired で拒否する", () => {
+    const addr = buildReplyTo("fac_abc", -1); // 既に失効
+    const token = extractReplyToken([addr]) as string;
+    const v = verifyReplyToken(token);
+    expect(v.ok).toBe(false);
+    if (!v.ok) expect(v.reason).toBe("expired");
   });
 
   it("表示名付き宛先からもトークンを抽出できる", () => {
     const addr = buildReplyTo("fac_xyz");
     const token = extractReplyToken([`絆サポート <${addr}>`, "other@x.com"]);
     expect(token).toBeTruthy();
+    const v = verifyReplyToken(token as string);
+    expect(v.ok).toBe(true);
+    if (v.ok) expect(v.facilityId).toBe("fac_xyz");
   });
 
   it("reply トークンが無い宛先は null", () => {

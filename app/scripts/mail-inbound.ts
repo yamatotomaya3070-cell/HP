@@ -5,7 +5,12 @@
 //     npm run mail-inbound -- --facilityNumber 2910103973 --text "昼食は自家製で提供しています"
 import { prisma } from "@/lib/db.js";
 import { handleInbound } from "@/server/mail/handleInbound.js";
-import { DevMailProvider, type OutboundMessage } from "@/server/mail/provider.js";
+import {
+  DevMailProvider,
+  getMailProvider,
+  type MailProvider,
+  type OutboundMessage,
+} from "@/server/mail/provider.js";
 import { buildReplyTo } from "@/server/mail/replyAddress.js";
 import { createEditModel } from "@/server/edit/editModelFactory.js";
 import { type EditModel } from "@/server/edit/editModel.js";
@@ -29,6 +34,8 @@ async function main() {
   const text = arg("text");
   const opsJson = arg("ops");
   const from = arg("from") ?? "owner@example-facility.jp";
+  // --send を付けると実プロバイダ（Resend等）で自動返信を実送信する。既定は送らず内容表示のみ。
+  const doSend = process.argv.includes("--send");
   if (!facilityNumber) throw new Error("--facilityNumber が必要です");
 
   const facility = await prisma.facility.findUnique({
@@ -41,7 +48,21 @@ async function main() {
   const replyTo = buildReplyTo(facility.id);
 
   let captured: OutboundMessage | null = null;
-  const provider = new DevMailProvider((m) => (captured = m));
+  // --send: 実プロバイダで送信しつつ内容も控える（キャプチャ用デコレータ）。
+  // 既定: DevMailProvider で送らず内容だけ控える。
+  const provider: MailProvider = doSend
+    ? (() => {
+        const real = getMailProvider();
+        return {
+          name: real.name,
+          send: async (m) => {
+            captured = m;
+            return real.send(m);
+          },
+          parseInbound: (raw, headers) => real.parseInbound(raw, headers),
+        };
+      })()
+    : new DevMailProvider((m) => (captured = m));
   const model: EditModel = opsJson ? fixedModel(opsJson) : createEditModel();
 
   const result = await handleInbound(
@@ -57,6 +78,7 @@ async function main() {
 
   console.log(`事業所: ${facility.name}`);
   console.log(`処理結果: ${result.outcome} / 残り無料修正: ${result.remaining ?? "-"}`);
+  console.log(`送信モード: ${doSend ? `実送信（${provider.name}）` : "シミュレート（未送信）"}`);
   console.log("──── 自動返信 ────");
   if (captured) {
     const m = captured as OutboundMessage;

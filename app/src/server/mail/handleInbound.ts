@@ -6,9 +6,7 @@ import { prisma } from "@/lib/db.js";
 import { type EditModel } from "@/server/edit/editModel.js";
 import { runEdit } from "@/server/edit/runEdit.js";
 import { type InboundMessage, type MailProvider } from "./provider.js";
-import { extractReplyToken } from "./replyAddress.js";
-import { buildReplyTo } from "./replyAddress.js";
-import { verifyToken } from "@/lib/tokens.js";
+import { extractReplyToken, buildReplyTo, verifyReplyToken } from "./replyAddress.js";
 import { remainingFreeEdits, MAX_FREE_EMAIL_EDITS } from "./freeEdits.js";
 import {
   composeAppliedReply,
@@ -81,7 +79,7 @@ export async function handleInbound(
   // 1) Reply-To トークンで事業所を特定
   const token = extractReplyToken(inbound.to);
   if (!token) return { outcome: "ignored_no_token" };
-  const auth = verifyToken(token, "reply");
+  const auth = verifyReplyToken(token);
   if (!auth.ok) return { outcome: "ignored_no_token" };
 
   const site = await prisma.generatedSite.findFirst({
