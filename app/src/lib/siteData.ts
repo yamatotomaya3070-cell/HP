@@ -19,11 +19,32 @@ export const SECTIONS = [
   "about",
   "services",
   "workContent",
+  "dailyFlow",
   "details",
+  "access",
   "gallery",
   "contact",
 ] as const;
 export type Section = (typeof SECTIONS)[number];
+
+/** 就労継続支援B型HPで使うアイコン語彙（実体はテンプレ内のインラインSVG）。 */
+export const ICON_KEYS = [
+  "box", // 軽作業・梱包
+  "scissors", // ものづくり・手芸
+  "laptop", // PC作業
+  "bus", // 送迎
+  "lunch", // 昼食
+  "calendar", // 見学・予約
+  "people", // 朝礼・面談
+  "pencil", // 作業
+  "flag", // 終礼・区切り
+  "heart", // 支援・安心
+  "clock", // 時間
+  "leaf", // 自然・成長
+  "sun", // あたたかさ
+  "star", // 得意・強み
+] as const;
+export type IconKey = (typeof ICON_KEYS)[number];
 
 /** 配色プリセット（design reference: 緑＝安心/福祉、橙＝あたたかさ）。 */
 export const THEME_PRESETS = ["green", "orange", "greenOrange"] as const;
@@ -40,12 +61,30 @@ export const factFieldSchema = z.object({
 });
 export type FactField = z.infer<typeof factFieldSchema>;
 
-/** サービス/作業内容の1項目。 */
+/** サービス/作業内容の1項目。icon/image は任意（未指定でも従来通り描画）。 */
 export const listItemSchema = z.object({
   title: z.string().min(1).max(120),
   description: z.string().max(600).default(""),
+  icon: z.enum(ICON_KEYS).optional(),
+  image: z.string().max(1000).default(""),
 });
 export type ListItem = z.infer<typeof listItemSchema>;
+
+/** ヒーロー下のハイライト・バッジ（見学受付中/送迎相談可/昼食あり 等）。 */
+export const highlightSchema = z.object({
+  icon: z.enum(ICON_KEYS),
+  label: z.string().min(1).max(40),
+});
+export type Highlight = z.infer<typeof highlightSchema>;
+
+/** 「一日の流れ」タイムラインの1ステップ。 */
+export const flowStepSchema = z.object({
+  time: z.string().max(20).default(""),
+  title: z.string().min(1).max(40),
+  description: z.string().max(200).default(""),
+  icon: z.enum(ICON_KEYS).optional(),
+});
+export type FlowStep = z.infer<typeof flowStepSchema>;
 
 /** 写真1枚（初期は空。掲載は事業所の許可が前提）。 */
 export const photoSchema = z.object({
@@ -63,6 +102,11 @@ export const siteDataSchema = z.object({
     headline: z.string().min(1).max(120),
     subheadline: z.string().max(200).default(""),
     catchCopy: z.string().max(300).default(""),
+    // メインビジュアル（空なら従来のグラデーションのみ）。
+    image: z.string().max(1000).default(""),
+    imageAlt: z.string().max(200).default(""),
+    // CTA直下のバッジ群（未確認は空。AI編集で事業所が付与）。
+    highlights: z.array(highlightSchema).max(4).default([]),
   }),
   about: z.object({
     heading: z.string().max(80).default("私たちについて"),
@@ -81,6 +125,15 @@ export const siteDataSchema = z.object({
     items: z.array(listItemSchema).max(20).default([]),
   }),
 
+  // 一日の流れ（未取得は unconfirmed＝「準備中」表示。AI編集で事業所が確定）
+  dailyFlow: z
+    .object({
+      heading: z.string().max(80).default("一日の流れ"),
+      state: z.enum(FIELD_STATES).default("unconfirmed"),
+      steps: z.array(flowStepSchema).max(8).default([]),
+    })
+    .default({ heading: "一日の流れ", state: "unconfirmed", steps: [] }),
+
   // 事実の詳細（confirmed=取込事実 / unconfirmed=要確認）
   details: z.object({
     heading: z.string().max(80).default("事業所情報"),
@@ -97,6 +150,16 @@ export const siteDataSchema = z.object({
     wage: factFieldSchema, // 工賃
   }),
 
+  // アクセス（地図）。mapQuery が空なら details.address を用いる。
+  // 住所が confirmed のときのみテンプレが地図を描画する＝事実性を自動担保。
+  access: z
+    .object({
+      heading: z.string().max(80).default("アクセス"),
+      mapQuery: z.string().max(300).default(""),
+      note: z.string().max(400).default(""),
+    })
+    .default({ heading: "アクセス", mapQuery: "", note: "" }),
+
   gallery: z.object({
     heading: z.string().max(80).default("事業所の様子"),
     photos: z.array(photoSchema).max(30).default([]),
@@ -105,6 +168,10 @@ export const siteDataSchema = z.object({
   contact: z.object({
     heading: z.string().max(80).default("お問い合わせ"),
     note: z.string().max(600).default(""),
+    // 「ご利用をお考えの方へ」CTAカード（空なら非表示）。
+    ctaTitle: z.string().max(80).default(""),
+    ctaBody: z.string().max(400).default(""),
+    ctaLabel: z.string().max(40).default(""),
   }),
 
   theme: z.object({

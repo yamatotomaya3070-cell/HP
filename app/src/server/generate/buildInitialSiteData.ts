@@ -51,6 +51,10 @@ export function buildInitialSiteData(
         ? `${facility.prefecture}の就労継続支援B型事業所`
         : "就労継続支援B型事業所",
       catchCopy: "あなたらしく、働く。",
+      // メインビジュアル・バッジは未確認。事業所がAI編集で付与する。
+      image: "",
+      imageAlt: "",
+      highlights: [],
     },
 
     about: {
@@ -70,6 +74,13 @@ export function buildInitialSiteData(
       items: [],
     },
 
+    // 一日の流れは事業所ごとに異なる事実のため未確認（AI編集で確定）。
+    dailyFlow: {
+      heading: "一日の流れ",
+      state: "unconfirmed",
+      steps: [],
+    },
+
     details: {
       heading: "事業所情報",
       corpName: confirmedField(facility.corpName),
@@ -86,6 +97,13 @@ export function buildInitialSiteData(
       wage: unconfirmedField(),
     },
 
+    // 住所が confirmed なら details.address から自動で地図を描画（mapQuery 空でOK）。
+    access: {
+      heading: "アクセス",
+      mapQuery: "",
+      note: "",
+    },
+
     gallery: {
       heading: "事業所の様子",
       photos: [], // 掲載は事業所の許可が前提
@@ -94,6 +112,9 @@ export function buildInitialSiteData(
     contact: {
       heading: "お問い合わせ",
       note: "見学・体験・ご質問など、お気軽にお問い合わせください。",
+      ctaTitle: "",
+      ctaBody: "",
+      ctaLabel: "",
     },
 
     theme: {
@@ -106,7 +127,9 @@ export function buildInitialSiteData(
         "about",
         "services",
         "workContent",
+        "dailyFlow",
         "details",
+        "access",
         "gallery",
         "contact",
       ],

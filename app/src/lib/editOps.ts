@@ -7,7 +7,14 @@
 // 事実項目(details)の設定は confirmed 化を伴う＝事業所本人が申告した事実として扱う。
 
 import { z } from "zod";
-import { SECTIONS, THEME_PRESETS, listItemSchema } from "./siteData.js";
+import {
+  SECTIONS,
+  THEME_PRESETS,
+  listItemSchema,
+  highlightSchema,
+  flowStepSchema,
+  photoSchema,
+} from "./siteData.js";
 
 /** confirmed 化できる事実フィールド（詳細セクション）。 */
 export const DETAIL_FIELDS = [
@@ -62,6 +69,44 @@ export const editOpSchema = z.discriminatedUnion("op", [
     op: z.literal("set_contact"),
     heading: z.string().max(80).optional(),
     note: z.string().max(600).optional(),
+    ctaTitle: z.string().max(80).optional(),
+    ctaBody: z.string().max(400).optional(),
+    ctaLabel: z.string().max(40).optional(),
+  }),
+  // ヒーローのメインビジュアル（画像URL）。空文字で画像を外す。
+  z.object({
+    op: z.literal("set_hero_media"),
+    image: z.string().max(1000),
+    imageAlt: z.string().max(200).optional(),
+  }),
+  // ヒーロー下のバッジ（見学受付中/送迎相談可/昼食あり 等）。
+  z.object({
+    op: z.literal("set_highlights"),
+    highlights: z.array(highlightSchema).max(4),
+  }),
+  // 一日の流れ。steps を与えると confirmed 化。
+  z.object({
+    op: z.literal("set_daily_flow"),
+    heading: z.string().max(80).optional(),
+    steps: z.array(flowStepSchema).max(8),
+  }),
+  // アクセス（地図の表示位置・補足）。mapQuery 空なら住所を使用。
+  z.object({
+    op: z.literal("set_access"),
+    heading: z.string().max(80).optional(),
+    mapQuery: z.string().max(300).optional(),
+    note: z.string().max(400).optional(),
+  }),
+  // ギャラリー写真を追加する（掲載は事業所の許可が前提）。
+  z.object({
+    op: z.literal("add_photo"),
+    photo: photoSchema,
+  }),
+  // ギャラリー写真を全置換／並べ替え。
+  z.object({
+    op: z.literal("set_gallery"),
+    heading: z.string().max(80).optional(),
+    photos: z.array(photoSchema).max(30),
   }),
   z.object({
     op: z.literal("set_theme"),
@@ -90,11 +135,17 @@ export type EditProposal = z.infer<typeof editProposalSchema>;
 /** 操作の種類一覧（プロンプト提示用）。 */
 export const OP_NAMES = [
   "set_hero",
+  "set_hero_media",
+  "set_highlights",
   "set_about",
   "set_services",
   "set_work_content",
+  "set_daily_flow",
   "set_detail",
   "clear_detail",
+  "set_access",
+  "add_photo",
+  "set_gallery",
   "set_contact",
   "set_theme",
   "reorder_sections",

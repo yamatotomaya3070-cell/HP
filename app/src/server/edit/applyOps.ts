@@ -41,10 +41,25 @@ function applyOne(data: SiteData, op: EditOp): SiteData {
       return {
         ...data,
         hero: {
+          ...data.hero,
           headline: op.headline ?? data.hero.headline,
           subheadline: op.subheadline ?? data.hero.subheadline,
           catchCopy: op.catchCopy ?? data.hero.catchCopy,
         },
+      };
+    case "set_hero_media":
+      return {
+        ...data,
+        hero: {
+          ...data.hero,
+          image: op.image,
+          imageAlt: op.imageAlt ?? data.hero.imageAlt,
+        },
+      };
+    case "set_highlights":
+      return {
+        ...data,
+        hero: { ...data.hero, highlights: op.highlights },
       };
     case "set_about":
       return {
@@ -73,16 +88,55 @@ function applyOne(data: SiteData, op: EditOp): SiteData {
           state: op.items !== undefined ? "confirmed" : data.workContent.state,
         },
       };
+    case "set_daily_flow":
+      return {
+        ...data,
+        dailyFlow: {
+          heading: op.heading ?? data.dailyFlow.heading,
+          steps: op.steps,
+          // steps を与えたら confirmed（空配列で明示的に「無し」も表現可）。
+          state: "confirmed",
+        },
+      };
     case "set_detail":
       return { ...data, details: withDetail(data, op.field, op.value) };
     case "clear_detail":
       return { ...data, details: withDetail(data, op.field, null) };
+    case "set_access":
+      return {
+        ...data,
+        access: {
+          heading: op.heading ?? data.access.heading,
+          mapQuery: op.mapQuery ?? data.access.mapQuery,
+          note: op.note ?? data.access.note,
+        },
+      };
+    case "add_photo":
+      return {
+        ...data,
+        gallery: {
+          ...data.gallery,
+          photos: [...data.gallery.photos, op.photo],
+        },
+      };
+    case "set_gallery":
+      return {
+        ...data,
+        gallery: {
+          heading: op.heading ?? data.gallery.heading,
+          photos: op.photos,
+        },
+      };
     case "set_contact":
       return {
         ...data,
         contact: {
+          ...data.contact,
           heading: op.heading ?? data.contact.heading,
           note: op.note ?? data.contact.note,
+          ctaTitle: op.ctaTitle ?? data.contact.ctaTitle,
+          ctaBody: op.ctaBody ?? data.contact.ctaBody,
+          ctaLabel: op.ctaLabel ?? data.contact.ctaLabel,
         },
       };
     case "set_theme":

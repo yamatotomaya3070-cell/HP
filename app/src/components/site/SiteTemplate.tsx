@@ -3,12 +3,15 @@
 
 import type { ReactElement } from "react";
 import {
+  SECTIONS,
   type FactField,
+  type IconKey,
   type ListItem,
   type Section,
   type SiteData,
   isPresentable,
 } from "@/lib/siteData.js";
+import { Icon } from "./Icon.js";
 
 const DETAIL_LABELS: Record<string, string> = {
   corpName: "運営法人",
@@ -24,6 +27,38 @@ const DETAIL_LABELS: Record<string, string> = {
   wage: "工賃",
 };
 
+/** 電話番号を tel: リンク用に整形する。 */
+function telHref(value: string): string {
+  return `tel:${value.replace(/[^0-9+]/g, "")}`;
+}
+
+/** 保存済みの section 順を尊重しつつ、未登録の正規セクションを本来の位置へ補完する。
+ *  既存データ（新セクション未登録）でも一日の流れ/アクセスが描画されるようにする。 */
+function orderedSections(data: SiteData): Section[] {
+  const hidden = new Set<Section>(data.layout.hidden);
+  // 保存順（重複除去）。
+  const saved = data.layout.sectionOrder.filter(
+    (s, i, arr) => arr.indexOf(s) === i,
+  );
+  const savedSet = new Set<Section>(saved);
+  const result: Section[] = [];
+  let si = 0;
+  for (const canonical of SECTIONS) {
+    // 保存順に存在する canonical は、その相対位置で流し込む。
+    while (si < saved.length && saved[si] === canonical) {
+      result.push(saved[si]);
+      si += 1;
+    }
+    // 保存順に無い正規セクションは、本来の位置に補完する。
+    if (!savedSet.has(canonical)) result.push(canonical);
+  }
+  // 保存順の取りこぼし（順序が正規と食い違う場合）を末尾へ。
+  for (; si < saved.length; si += 1) {
+    if (!result.includes(saved[si])) result.push(saved[si]);
+  }
+  return result.filter((s) => !hidden.has(s));
+}
+
 /** 未確認セクションの共通「準備中」表示。断定を避ける。 */
 function PrepNote({ label }: { label: string }): ReactElement {
   return (
@@ -31,6 +66,31 @@ function PrepNote({ label }: { label: string }): ReactElement {
       <span className="prep-badge">準備中</span>
       {label}は現在準備中です。最新の情報は事業所へ直接お問い合わせください。
     </p>
+  );
+}
+
+/** アイコン付きの特徴カード（サービス/作業内容）。 */
+function FeatureCard({ item, index, id }: { item: ListItem; index: number; id: Section }): ReactElement {
+  return (
+    <article className="feature-card" key={`${id}-${index}`}>
+      {item.image ? (
+        <div className="feature-media">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={item.image} alt="" loading="lazy" />
+        </div>
+      ) : null}
+      <div className="feature-body">
+        <div className="feature-head">
+          {item.icon ? (
+            <span className="feature-icon" aria-hidden="true">
+              <Icon name={item.icon} size={22} />
+            </span>
+          ) : null}
+          <h3>{item.title}</h3>
+        </div>
+        {item.description ? <p>{item.description}</p> : null}
+      </div>
+    </article>
   );
 }
 
@@ -54,10 +114,7 @@ function ListSection({
         {state === "confirmed" && items.length > 0 ? (
           <div className="card-grid">
             {items.map((item, i) => (
-              <article className="feature-card" key={`${id}-${i}`}>
-                <h3>{item.title}</h3>
-                {item.description ? <p>{item.description}</p> : null}
-              </article>
+              <FeatureCard item={item} index={i} id={id} key={`${id}-${i}`} />
             ))}
           </div>
         ) : (
@@ -91,7 +148,7 @@ function DetailRow({
   } else if (fieldKey === "tel") {
     dd = (
       <dd>
-        <a href={`tel:${value.replace(/[^0-9+]/g, "")}`}>{value}</a>
+        <a href={telHref(value)}>{value}</a>
       </dd>
     );
   } else if (fieldKey === "email") {
@@ -112,25 +169,145 @@ function DetailRow({
   );
 }
 
+/** ヒーロー：左＝コピー＋CTA＋バッジ、右＝メインビジュアル（あれば）。 */
+function HeroSection(data: SiteData): ReactElement {
+  const tel = data.details.tel;
+  const hasImage = data.hero.image.length > 0;
+  return (
+    <section
+      className={`hero${hasImage ? " has-image" : ""}`}
+      id="hero"
+      aria-labelledby="hero-h"
+      key="hero"
+    >
+      <div className="wrap hero-grid">
+        <div className="hero-copy">
+          {data.hero.subheadline ? (
+            <p className="sub">{data.hero.subheadline}</p>
+          ) : null}
+          <h1 id="hero-h">{data.hero.headline}</h1>
+          {data.hero.catchCopy ? (
+            <p className="catch">{data.hero.catchCopy}</p>
+          ) : null}
+          <div className="hero-actions">
+            <a className="hero-cta" href="#contact">
+              <Icon name="calendar" size={20} />
+              見学・ご相談はこちら
+            </a>
+            {isPresentable(tel) ? (
+              <a className="hero-tel" href={telHref(tel.value as string)}>
+                <Icon name="phone" size={18} />
+                お電話 {tel.value}
+              </a>
+            ) : null}
+          </div>
+          {data.hero.highlights.length > 0 ? (
+            <ul className="hero-badges">
+              {data.hero.highlights.map((h, i) => (
+                <li key={`hl-${i}`}>
+                  <Icon name={h.icon} size={18} />
+                  {h.label}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+        {hasImage ? (
+          <div className="hero-visual">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={data.hero.image}
+              alt={data.hero.imageAlt}
+              fetchPriority="high"
+            />
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+/** 一日の流れ：時刻＋アイコン＋見出し＋説明のタイムライン。 */
+function DailyFlowSection(data: SiteData): ReactElement {
+  const { heading, state, steps } = data.dailyFlow;
+  return (
+    <section className="section flow" id="dailyFlow" aria-labelledby="dailyFlow-h" key="dailyFlow">
+      <div className="wrap">
+        <p className="eyebrow">FLOW</p>
+        <h2 className="section-title" id="dailyFlow-h">
+          {heading}
+        </h2>
+        {state === "confirmed" && steps.length > 0 ? (
+          <ol className="flow-list">
+            {steps.map((step, i) => (
+              <li className="flow-step" key={`flow-${i}`}>
+                <span className="flow-icon" aria-hidden="true">
+                  <Icon name={(step.icon ?? "clock") as IconKey} size={22} />
+                </span>
+                {step.time ? <span className="flow-time">{step.time}</span> : null}
+                <h3 className="flow-title">{step.title}</h3>
+                {step.description ? (
+                  <p className="flow-desc">{step.description}</p>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <PrepNote label={heading} />
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** アクセス：住所（確定時）または mapQuery から地図を埋め込む。 */
+function AccessSection(data: SiteData): ReactElement | null {
+  const address = data.details.address;
+  const query =
+    data.access.mapQuery.trim() ||
+    (isPresentable(address) ? (address.value as string) : "");
+  const mapSrc = query
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=15&output=embed`
+    : "";
+  return (
+    <section className="section access" id="access" aria-labelledby="access-h" key="access">
+      <div className="wrap">
+        <p className="eyebrow">ACCESS</p>
+        <h2 className="section-title" id="access-h">
+          {data.access.heading}
+        </h2>
+        {mapSrc ? (
+          <div className="access-grid">
+            <div className="map-frame">
+              <iframe
+                title={`${data.hero.headline}の地図`}
+                src={mapSrc}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+            <div className="access-info">
+              {isPresentable(address) ? (
+                <p className="access-address">
+                  <Icon name="pin" size={20} />
+                  {address.value}
+                </p>
+              ) : null}
+              {data.access.note ? <p>{data.access.note}</p> : null}
+            </div>
+          </div>
+        ) : (
+          <PrepNote label={data.access.heading} />
+        )}
+      </div>
+    </section>
+  );
+}
+
 function renderSection(section: Section, data: SiteData): ReactElement | null {
   switch (section) {
     case "hero":
-      return (
-        <section className="hero" id="hero" aria-labelledby="hero-h" key="hero">
-          <div className="wrap">
-            {data.hero.subheadline ? (
-              <p className="sub">{data.hero.subheadline}</p>
-            ) : null}
-            <h1 id="hero-h">{data.hero.headline}</h1>
-            {data.hero.catchCopy ? (
-              <p className="catch">{data.hero.catchCopy}</p>
-            ) : null}
-            <a className="hero-cta" href="#contact">
-              お問い合わせはこちら
-            </a>
-          </div>
-        </section>
-      );
+      return HeroSection(data);
 
     case "about":
       return (
@@ -175,6 +352,12 @@ function renderSection(section: Section, data: SiteData): ReactElement | null {
           key="workContent"
         />
       );
+
+    case "dailyFlow":
+      return DailyFlowSection(data);
+
+    case "access":
+      return AccessSection(data);
 
     case "details": {
       const d = data.details;
@@ -238,7 +421,7 @@ function renderSection(section: Section, data: SiteData): ReactElement | null {
               {data.gallery.photos.map((photo, i) => (
                 <figure key={`g-${i}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo.url} alt={photo.alt} />
+                  <img src={photo.url} alt={photo.alt} loading="lazy" />
                   {photo.caption ? <figcaption>{photo.caption}</figcaption> : null}
                 </figure>
               ))}
@@ -250,6 +433,7 @@ function renderSection(section: Section, data: SiteData): ReactElement | null {
     case "contact": {
       const tel = data.details.tel;
       const email = data.details.email;
+      const hasCta = data.contact.ctaTitle.length > 0;
       return (
         <section
           className="section contact"
@@ -262,23 +446,40 @@ function renderSection(section: Section, data: SiteData): ReactElement | null {
             <h2 className="section-title" id="contact-h">
               {data.contact.heading}
             </h2>
-            <div className="detail-card">
-              {data.contact.note ? <p>{data.contact.note}</p> : null}
-              <div className="contact-actions">
-                {isPresentable(tel) ? (
-                  <a
-                    className="btn primary"
-                    href={`tel:${(tel.value as string).replace(/[^0-9+]/g, "")}`}
-                  >
-                    電話でお問い合わせ
-                  </a>
-                ) : null}
-                {isPresentable(email) ? (
-                  <a className="btn" href={`mailto:${email.value}`}>
-                    メールでお問い合わせ
-                  </a>
-                ) : null}
+            <div className={`contact-grid${hasCta ? " with-cta" : ""}`}>
+              <div className="detail-card">
+                {data.contact.note ? <p>{data.contact.note}</p> : null}
+                <div className="contact-actions">
+                  {isPresentable(tel) ? (
+                    <a
+                      className="btn primary"
+                      href={telHref(tel.value as string)}
+                    >
+                      <Icon name="phone" size={18} />
+                      電話でお問い合わせ
+                    </a>
+                  ) : null}
+                  {isPresentable(email) ? (
+                    <a className="btn" href={`mailto:${email.value}`}>
+                      <Icon name="chat" size={18} />
+                      メールでお問い合わせ
+                    </a>
+                  ) : null}
+                </div>
               </div>
+              {hasCta ? (
+                <aside className="cta-card">
+                  <span className="cta-icon" aria-hidden="true">
+                    <Icon name="heart" size={28} />
+                  </span>
+                  <h3>{data.contact.ctaTitle}</h3>
+                  {data.contact.ctaBody ? <p>{data.contact.ctaBody}</p> : null}
+                  <a className="btn primary" href="#contact">
+                    {data.contact.ctaLabel || "お問い合わせ"}
+                    <Icon name="arrow" size={18} />
+                  </a>
+                </aside>
+              ) : null}
             </div>
           </div>
         </section>
@@ -291,8 +492,7 @@ function renderSection(section: Section, data: SiteData): ReactElement | null {
 }
 
 export function SiteTemplate({ data }: { data: SiteData }): ReactElement {
-  const hidden = new Set<Section>(data.layout.hidden);
-  const sections = data.layout.sectionOrder.filter((s) => !hidden.has(s));
+  const sections = orderedSections(data);
   const brandName = data.hero.headline;
 
   return (
@@ -306,9 +506,14 @@ export function SiteTemplate({ data }: { data: SiteData }): ReactElement {
           <nav className="nav" aria-label="メインナビゲーション">
             <a href="#about">私たちについて</a>
             <a href="#services">サービス</a>
+            <a href="#dailyFlow">一日の流れ</a>
             <a href="#details">事業所情報</a>
-            <a href="#contact">お問い合わせ</a>
+            <a href="#access">アクセス</a>
           </nav>
+          <a className="header-cta" href="#contact">
+            <Icon name="calendar" size={18} />
+            見学・ご相談
+          </a>
         </div>
       </header>
 

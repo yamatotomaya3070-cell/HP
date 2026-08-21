@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { applyOps } from "@/server/edit/applyOps.js";
 import { buildInitialSiteData } from "@/server/generate/buildInitialSiteData.js";
-import { siteDataSchema } from "@/lib/siteData.js";
+import { siteDataSchema, SECTIONS } from "@/lib/siteData.js";
 
 function base() {
   return buildInitialSiteData({
@@ -91,8 +91,8 @@ describe("applyOps ホワイトリスト適用", () => {
     ]);
     expect(data.layout.sectionOrder[0]).toBe("contact");
     expect(data.layout.sectionOrder[1]).toBe("hero");
-    // 全7セクションが失われない
-    expect(new Set(data.layout.sectionOrder).size).toBe(7);
+    // 全セクション(9種)が失われない
+    expect(new Set(data.layout.sectionOrder).size).toBe(SECTIONS.length);
   });
 
   it("set_section_visibility で非表示/再表示できる", () => {
@@ -125,5 +125,84 @@ describe("applyOps ホワイトリスト適用", () => {
       { op: "set_detail", field: "wage", value: "月平均15,000円" },
     ]);
     expect(siteDataSchema.safeParse(data).success).toBe(true);
+  });
+
+  it("set_daily_flow で一日の流れを confirmed 化できる", () => {
+    const { data, appliedCount } = applyOps(base(), [
+      {
+        op: "set_daily_flow",
+        steps: [
+          { time: "10:00", title: "朝礼", description: "予定確認", icon: "people" },
+          { time: "15:00", title: "終礼", icon: "flag" },
+        ],
+      },
+    ]);
+    expect(appliedCount).toBe(1);
+    expect(data.dailyFlow.state).toBe("confirmed");
+    expect(data.dailyFlow.steps).toHaveLength(2);
+    expect(data.dailyFlow.steps[0].icon).toBe("people");
+  });
+
+  it("set_highlights / set_hero_media はヒーローだけを更新する", () => {
+    const { data } = applyOps(base(), [
+      {
+        op: "set_highlights",
+        highlights: [
+          { icon: "bus", label: "送迎相談可" },
+          { icon: "lunch", label: "昼食あり" },
+        ],
+      },
+      { op: "set_hero_media", image: "https://example.com/a.jpg", imageAlt: "作業風景" },
+    ]);
+    expect(data.hero.highlights).toHaveLength(2);
+    expect(data.hero.image).toBe("https://example.com/a.jpg");
+    expect(data.hero.imageAlt).toBe("作業風景");
+    // 見出しは温存される
+    expect(data.hero.headline).toBe("テスト事業所");
+  });
+
+  it("不正なアイコンキーの highlight は不採用", () => {
+    const { appliedCount, rejected } = applyOps(base(), [
+      { op: "set_highlights", highlights: [{ icon: "bogus", label: "x" }] },
+    ]);
+    expect(appliedCount).toBe(0);
+    expect(rejected).toHaveLength(1);
+  });
+
+  it("add_photo は既存写真に追記し、set_gallery は全置換する", () => {
+    const added = applyOps(base(), [
+      { op: "add_photo", photo: { url: "https://x/1.jpg", alt: "1", caption: "" } },
+      { op: "add_photo", photo: { url: "https://x/2.jpg", alt: "2", caption: "" } },
+    ]);
+    expect(added.data.gallery.photos).toHaveLength(2);
+    const replaced = applyOps(added.data, [
+      { op: "set_gallery", photos: [{ url: "https://x/9.jpg", alt: "9", caption: "" }] },
+    ]);
+    expect(replaced.data.gallery.photos).toHaveLength(1);
+    expect(replaced.data.gallery.photos[0].url).toBe("https://x/9.jpg");
+  });
+
+  it("set_access で mapQuery と補足を設定できる", () => {
+    const { data, appliedCount } = applyOps(base(), [
+      { op: "set_access", mapQuery: "奈良県奈良市登大路町", note: "近鉄奈良駅 徒歩5分" },
+    ]);
+    expect(appliedCount).toBe(1);
+    expect(data.access.mapQuery).toBe("奈良県奈良市登大路町");
+    expect(data.access.note).toBe("近鉄奈良駅 徒歩5分");
+  });
+
+  it("set_contact は CTA カードのフィールドを更新できる", () => {
+    const { data } = applyOps(base(), [
+      {
+        op: "set_contact",
+        ctaTitle: "ご利用をお考えの方へ",
+        ctaBody: "見学は随時受け付けています。",
+        ctaLabel: "まずはお気軽にご相談ください",
+      },
+    ]);
+    expect(data.contact.ctaTitle).toBe("ご利用をお考えの方へ");
+    expect(data.contact.ctaLabel).toBe("まずはお気軽にご相談ください");
+    // note は温存
+    expect(data.contact.note).toBeTruthy();
   });
 });

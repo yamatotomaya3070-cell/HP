@@ -145,11 +145,32 @@ body {
   }
 }
 
+/* ── ヘッダーCTA ──────────────────────────────── */
+.header-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--primary);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  transition: background 150ms ease, transform 150ms ease;
+  white-space: nowrap;
+}
+.header-cta:hover {
+  background: var(--primary-strong);
+  transform: translateY(-1px);
+}
+
 /* ── ヒーロー ─────────────────────────────────── */
 .hero {
   position: relative;
   background: linear-gradient(150deg, var(--hero-a), var(--hero-b));
-  padding-block: clamp(3.5rem, 2rem + 8vw, 7rem);
+  padding-block: clamp(3rem, 1.5rem + 7vw, 6rem);
   overflow: hidden;
 }
 .hero::after {
@@ -160,30 +181,45 @@ body {
   width: 46vw;
   aspect-ratio: 1;
   background: radial-gradient(circle at 50% 50%, var(--accent) 0%, transparent 68%);
-  opacity: 0.18;
+  opacity: 0.16;
   pointer-events: none;
 }
-.hero .wrap {
+.hero-grid {
   position: relative;
-  max-width: 40ch;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.8rem, 1rem + 4vw, 3.5rem);
+  align-items: center;
+}
+.hero.has-image .hero-grid {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+}
+.hero-copy {
+  max-width: 46ch;
 }
 .hero h1 {
   font-size: clamp(2.1rem, 1.3rem + 3.6vw, 3.6rem);
-  line-height: 1.2;
+  line-height: 1.22;
   letter-spacing: 0.01em;
   margin: 0.4rem 0 0.6rem;
 }
 .hero .sub {
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   color: var(--ink-soft);
   font-weight: 700;
   margin: 0;
 }
 .hero .catch {
-  font-size: clamp(1.15rem, 0.9rem + 1vw, 1.5rem);
+  font-size: clamp(1.1rem, 0.9rem + 1vw, 1.45rem);
   color: var(--primary-strong);
   font-weight: 800;
-  margin: 1.2rem 0 1.8rem;
+  margin: 1rem 0 1.6rem;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: center;
 }
 .hero-cta {
   display: inline-flex;
@@ -202,6 +238,65 @@ body {
   transform: translateY(-2px);
   background: var(--primary-strong);
 }
+.hero-tel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-strong);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--line);
+  text-decoration: none;
+  font-weight: 800;
+  padding: 0.8rem 1.3rem;
+  border-radius: 999px;
+  transition: background 150ms ease;
+}
+.hero-tel:hover {
+  background: #fff;
+}
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  list-style: none;
+  margin: 1.6rem 0 0;
+  padding: 0;
+}
+.hero-badges li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--line);
+  color: var(--primary-strong);
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+}
+.hero-visual {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  aspect-ratio: 4 / 3;
+}
+.hero-visual img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+@media (max-width: 800px) {
+  .hero.has-image .hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-visual {
+    order: -1;
+    aspect-ratio: 16 / 9;
+  }
+}
 
 /* ── About ───────────────────────────────────── */
 .about-body {
@@ -219,14 +314,50 @@ body {
   gap: 1.1rem;
 }
 .feature-card {
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 1.4rem 1.3rem;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+.feature-media {
+  aspect-ratio: 3 / 2;
+  background: var(--surface-warm);
+}
+.feature-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.feature-body {
+  padding: 1.3rem 1.3rem 1.4rem;
+}
+.feature-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.5rem;
+}
+.feature-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  border-radius: 12px;
+  color: var(--primary-strong);
+  background: var(--tint);
 }
 .feature-card h3 {
-  margin: 0 0 0.5rem;
+  margin: 0;
   font-size: 1.08rem;
   color: var(--primary-strong);
 }
@@ -234,6 +365,106 @@ body {
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.96rem;
+}
+
+/* ── 一日の流れ（タイムライン） ─────────────────── */
+.flow {
+  background: var(--surface-warm);
+}
+.flow-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.2rem;
+  counter-reset: flow;
+}
+.flow-step {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.2rem 1.3rem;
+  box-shadow: var(--shadow-sm);
+}
+.flow-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--primary);
+  margin-bottom: 0.8rem;
+}
+.flow-time {
+  display: block;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+.flow-title {
+  margin: 0.2rem 0 0.4rem;
+  font-size: 1rem;
+  color: var(--primary-strong);
+}
+.flow-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+/* ── アクセス（地図） ─────────────────────────── */
+.access-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 1.4rem;
+  align-items: stretch;
+}
+.map-frame {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  min-height: 300px;
+  background: var(--surface-warm);
+}
+.map-frame iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  border: 0;
+}
+.access-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.8rem;
+  background: var(--surface-warm);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 1.6rem;
+}
+.access-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  font-weight: 700;
+  color: var(--ink);
+}
+.access-address svg {
+  flex: none;
+  color: var(--primary-strong);
+  margin-top: 0.15rem;
+}
+@media (max-width: 720px) {
+  .access-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 未確認（準備中）表示 */
@@ -327,6 +558,50 @@ body {
 }
 .contact .detail-card {
   background: var(--surface);
+}
+.contact-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.4rem;
+  align-items: stretch;
+}
+.contact-grid.with-cta {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+.cta-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: linear-gradient(160deg, var(--surface), var(--surface-warm));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.5rem, 1rem + 2vw, 2.2rem);
+  box-shadow: var(--shadow-sm);
+}
+.cta-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--tint);
+}
+.cta-card h3 {
+  margin: 0.3rem 0 0;
+  font-size: 1.2rem;
+  color: var(--ink);
+}
+.cta-card p {
+  margin: 0 0 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.96rem;
+}
+@media (max-width: 720px) {
+  .contact-grid.with-cta {
+    grid-template-columns: 1fr;
+  }
 }
 .contact-actions {
   display: flex;

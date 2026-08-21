@@ -7,7 +7,12 @@ import {
   editProposalSchema,
   OP_NAMES,
 } from "@/lib/editOps.js";
-import { type SiteData, THEME_PRESETS, SECTIONS } from "@/lib/siteData.js";
+import {
+  type SiteData,
+  THEME_PRESETS,
+  SECTIONS,
+  ICON_KEYS,
+} from "@/lib/siteData.js";
 
 export interface ProposeEditInput {
   /** 現在の構造化データ。 */
@@ -50,12 +55,24 @@ export function buildSystemPrompt(): string {
     '- clear_detail: { "op":"clear_detail", "field":<下記の英語キー> }  ← 事実項目の掲載取りやめ',
     '- set_hero: { "op":"set_hero", "headline"?:"", "subheadline"?:"", "catchCopy"?:"" }',
     '- set_about: { "op":"set_about", "heading"?:"", "body"?:["段落1","段落2"] }',
-    '- set_services: { "op":"set_services", "heading"?:"", "items"?:[{"title":"","description":""}] }',
-    '- set_work_content: { "op":"set_work_content", "heading"?:"", "items"?:[{"title":"","description":""}] }',
-    '- set_contact: { "op":"set_contact", "heading"?:"", "note"?:"" }',
+    '- set_services: { "op":"set_services", "heading"?:"", "items"?:[{"title":"","description":"","icon"?:<アイコンキー>}] }',
+    '- set_work_content: { "op":"set_work_content", "heading"?:"", "items"?:[{"title":"","description":"","icon"?:<アイコンキー>}] }',
+    '- set_hero_media: { "op":"set_hero_media", "image":"<画像URL>", "imageAlt"?:"" }  ← ヒーローのメイン画像。外すなら image:""',
+    '- set_highlights: { "op":"set_highlights", "highlights":[{"icon":<アイコンキー>,"label":"見学受付中"}] }  ← 最大4つ。ヒーロー下のバッジ',
+    '- set_daily_flow: { "op":"set_daily_flow", "heading"?:"", "steps":[{"time":"10:00","title":"朝礼","description":"","icon"?:<アイコンキー>}] }  ← 一日の流れ。最大8',
+    '- set_access: { "op":"set_access", "heading"?:"", "mapQuery"?:"<地図の住所や施設名>", "note"?:"" }  ← 地図は通常 住所から自動表示。mapQueryは上書き時のみ',
+    '- add_photo: { "op":"add_photo", "photo":{"url":"<画像URL>","alt":"","caption":""} }  ← ギャラリー写真を1枚追加',
+    '- set_gallery: { "op":"set_gallery", "heading"?:"", "photos":[{"url":"","alt":"","caption":""}] }  ← 写真を全置換',
+    '- set_contact: { "op":"set_contact", "heading"?:"", "note"?:"", "ctaTitle"?:"", "ctaBody"?:"", "ctaLabel"?:"" }',
     '- set_theme: { "op":"set_theme", "preset":"' + THEME_PRESETS.join('"|"') + '" }',
     '- reorder_sections: { "op":"reorder_sections", "order":[<セクション名の配列>] }',
     '- set_section_visibility: { "op":"set_section_visibility", "section":<セクション名>, "visible":true|false }',
+    "",
+    "# アイコンキー（icon に使える値。該当が無ければ icon を省略）",
+    "- " + ICON_KEYS.join(", "),
+    "  目安: 軽作業=box, 手芸/ものづくり=scissors, PC=laptop, 送迎=bus, 昼食=lunch, 見学/予約=calendar,",
+    "        朝礼/面談=people, 作業=pencil, 終礼=flag, 時間=clock, 支援/安心=heart, 得意=star",
+    "- 画像URL(set_hero_media/add_photo)は、指示に実在するURLが示された場合のみ設定。無ければ画像系opは使わない。",
     "",
     "# set_detail / clear_detail の field に使える英語キー（左が指示語、右が field 値）",
     "- 法人名→corpName / 住所→address / 電話・TEL→tel / FAX→fax / URL・ホームページ→url / メール→email",
@@ -74,6 +91,15 @@ export function buildSystemPrompt(): string {
     '{ "message":"営業時間と送迎を設定しました。", "ops":[' +
       '{"op":"set_detail","field":"businessHours","value":"平日 9:00〜16:00"},' +
       '{"op":"set_detail","field":"accessTransport","value":"あり"}] }',
+    "指示「一日の流れは10時朝礼、10時15分から作業、12時昼休み、15時終礼です。送迎と昼食のバッジも出して」→",
+    '{ "message":"一日の流れとバッジを設定しました。", "ops":[' +
+      '{"op":"set_daily_flow","steps":[' +
+      '{"time":"10:00","title":"朝礼","description":"一日の予定を確認してスタート","icon":"people"},' +
+      '{"time":"10:15","title":"作業","description":"自分のペースで取り組みます","icon":"pencil"},' +
+      '{"time":"12:00","title":"昼休み","description":"昼食でリフレッシュ","icon":"lunch"},' +
+      '{"time":"15:00","title":"終礼","description":"振り返りをして終わります","icon":"flag"}]},' +
+      '{"op":"set_highlights","highlights":[' +
+      '{"icon":"bus","label":"送迎相談可"},{"icon":"lunch","label":"昼食あり"}]}] }',
   ].join("\n");
 }
 
