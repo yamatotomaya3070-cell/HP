@@ -12,3 +12,7 @@ prisma/*.db
 
 .vercel
 .env*
+
+# アップロード/生成画像（ローカル保存先。本番は Vercel Blob）
+public/uploads/
+screenshots/
