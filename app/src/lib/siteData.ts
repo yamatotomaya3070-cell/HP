@@ -150,15 +150,20 @@ export const siteDataSchema = z.object({
     wage: factFieldSchema, // 工賃
   }),
 
-  // アクセス（地図）。mapQuery が空なら details.address を用いる。
-  // 住所が confirmed のときのみテンプレが地図を描画する＝事実性を自動担保。
+  // アクセス（地図）。geo があれば OpenStreetMap を埋め込む（Google埋込は X-Frame で不可）。
+  // geo が無くても mapQuery/住所があれば「地図で開く」リンクを出す。
   access: z
     .object({
       heading: z.string().max(80).default("アクセス"),
       mapQuery: z.string().max(300).default(""),
       note: z.string().max(400).default(""),
+      // 生成時にジオコーディングした緯度経度（埋め込み地図用）。
+      geo: z
+        .object({ lat: z.number(), lng: z.number() })
+        .nullable()
+        .default(null),
     })
-    .default({ heading: "アクセス", mapQuery: "", note: "" }),
+    .default({ heading: "アクセス", mapQuery: "", note: "", geo: null }),
 
   gallery: z.object({
     heading: z.string().max(80).default("事業所の様子"),

@@ -97,11 +97,12 @@ export function buildInitialSiteData(
       wage: unconfirmedField(),
     },
 
-    // 住所が confirmed なら details.address から自動で地図を描画（mapQuery 空でOK）。
+    // 住所が confirmed なら details.address から「地図で開く」リンクを表示（mapQuery 空でOK）。
     access: {
       heading: "アクセス",
       mapQuery: "",
       note: "",
+      geo: null,
     },
 
     gallery: {

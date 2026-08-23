@@ -260,15 +260,40 @@ function DailyFlowSection(data: SiteData): ReactElement {
   );
 }
 
-/** アクセス：住所（確定時）または mapQuery から地図を埋め込む。 */
+/** アクセス：geo があれば OpenStreetMap を埋め込む。無ければ「地図で開く」リンク。 */
 function AccessSection(data: SiteData): ReactElement | null {
   const address = data.details.address;
   const query =
     data.access.mapQuery.trim() ||
     (isPresentable(address) ? (address.value as string) : "");
-  const mapSrc = query
-    ? `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=15&output=embed`
+  const geo = data.access.geo;
+
+  // Google埋込は X-Frame-Options で不可のため、埋め込みは OSM、リンクは Google を使う。
+  const osmSrc = geo
+    ? (() => {
+        const d = 0.006;
+        const bbox = `${geo.lng - d},${geo.lat - d},${geo.lng + d},${geo.lat + d}`;
+        return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${geo.lat},${geo.lng}`;
+      })()
     : "";
+  const mapLink = query
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+    : "";
+
+  if (!query && !geo) {
+    return (
+      <section className="section access" id="access" aria-labelledby="access-h" key="access">
+        <div className="wrap">
+          <p className="eyebrow">ACCESS</p>
+          <h2 className="section-title" id="access-h">
+            {data.access.heading}
+          </h2>
+          <PrepNote label={data.access.heading} />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="section access" id="access" aria-labelledby="access-h" key="access">
       <div className="wrap">
@@ -276,29 +301,42 @@ function AccessSection(data: SiteData): ReactElement | null {
         <h2 className="section-title" id="access-h">
           {data.access.heading}
         </h2>
-        {mapSrc ? (
-          <div className="access-grid">
-            <div className="map-frame">
+        <div className="access-grid">
+          <div className="map-frame">
+            {osmSrc ? (
               <iframe
                 title={`${data.hero.headline}の地図`}
-                src={mapSrc}
+                src={osmSrc}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
-            </div>
-            <div className="access-info">
-              {isPresentable(address) ? (
-                <p className="access-address">
-                  <Icon name="pin" size={20} />
-                  {address.value}
-                </p>
-              ) : null}
-              {data.access.note ? <p>{data.access.note}</p> : null}
-            </div>
+            ) : (
+              <div className="map-placeholder" aria-hidden="true">
+                <Icon name="pin" size={40} />
+              </div>
+            )}
           </div>
-        ) : (
-          <PrepNote label={data.access.heading} />
-        )}
+          <div className="access-info">
+            {isPresentable(address) ? (
+              <p className="access-address">
+                <Icon name="pin" size={20} />
+                {address.value}
+              </p>
+            ) : null}
+            {data.access.note ? <p>{data.access.note}</p> : null}
+            {mapLink ? (
+              <a
+                className="btn"
+                href={mapLink}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Icon name="pin" size={18} />
+                地図で開く
+              </a>
+            ) : null}
+          </div>
+        </div>
       </div>
     </section>
   );

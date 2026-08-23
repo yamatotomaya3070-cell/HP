@@ -14,6 +14,7 @@ import {
 } from "@/lib/siteData.js";
 import { generateSiteForFacility } from "./generateSite.js";
 import { generateCustomContent } from "./customizeContent.js";
+import { geocodeAddress } from "./geocode.js";
 import { getImageGenerator } from "@/server/media/imageGenerator.js";
 import { saveGeneratedImage } from "@/server/media/imageStore.js";
 
@@ -78,6 +79,14 @@ export async function generateRichSiteForFacility(
     }
   }
 
+  // 3.5 住所をジオコーディング（地図埋め込み用・失敗しても続行）
+  let geo = null as { lat: number; lng: number } | null;
+  try {
+    geo = await geocodeAddress(facility.address);
+  } catch {
+    geo = null;
+  }
+
   // 4. リッチ SiteData を組み立て
   const subheadline = facility.prefecture
     ? `${facility.prefecture}の就労継続支援B型事業所`
@@ -125,7 +134,12 @@ export async function generateRichSiteForFacility(
       lunch: unconfirmedField(),
       wage: unconfirmedField(),
     },
-    access: { heading: "アクセス", mapQuery: "", note: "" },
+    access: {
+      heading: "アクセス",
+      mapQuery: facility.address ?? "",
+      note: "",
+      geo,
+    },
     gallery: { heading: "事業所の様子", photos: [] },
     contact: {
       heading: "お問い合わせ",

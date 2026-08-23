@@ -109,6 +109,7 @@ function applyOne(data: SiteData, op: EditOp): SiteData {
           heading: op.heading ?? data.access.heading,
           mapQuery: op.mapQuery ?? data.access.mapQuery,
           note: op.note ?? data.access.note,
+          geo: data.access.geo,
         },
       };
     case "add_photo":

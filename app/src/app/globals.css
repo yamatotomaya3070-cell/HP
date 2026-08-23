@@ -438,6 +438,18 @@ body {
   min-height: 300px;
   border: 0;
 }
+.map-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 300px;
+  color: var(--primary-strong);
+  opacity: 0.5;
+}
+.access-info .btn {
+  align-self: flex-start;
+  margin-top: 0.4rem;
+}
 .access-info {
   display: flex;
   flex-direction: column;
