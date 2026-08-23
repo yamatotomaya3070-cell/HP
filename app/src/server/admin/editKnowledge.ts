@@ -35,6 +35,21 @@ const OP_LABELS: Record<string, string> = {
   set_section_visibility: "表示切替",
 };
 
+/** 返信本文から引用元メール（> 行・日時の帰属行以降）を除き、事業所の新規発言だけ残す。 */
+export function cleanReply(text: string): string {
+  const lines = text.split(/\r?\n/);
+  const out: string[] = [];
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith(">")) break; // 引用ブロック開始
+    if (/^\d{4}年.*<.*@.*>/.test(t)) break; // "2026年… <info@…>:" の帰属行
+    if (/wrote:\s*$/i.test(t)) break; // "On … wrote:"
+    out.push(line);
+  }
+  const cleaned = out.join("\n").trim();
+  return cleaned || text.trim();
+}
+
 /** 1つの EditOp を人が読めるラベルにする（集計キー）。 */
 function summarizeOp(op: unknown): string {
   const o = (op ?? {}) as Record<string, unknown>;
@@ -80,7 +95,7 @@ export async function getEditKnowledge(limit = 200): Promise<EditKnowledge> {
       facilityName: r.facility?.name ?? "(不明)",
       facilityNumber: r.facility?.facilityNumber ?? null,
       createdAt: r.createdAt,
-      rawInput: r.rawInput,
+      rawInput: cleanReply(r.rawInput),
       message: typeof structured.message === "string" ? structured.message : "",
       status: r.status,
       opLabels: ops.map(summarizeOp),
