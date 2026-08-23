@@ -31,6 +31,11 @@ export interface GeneratedImageBytes {
 
 export interface ImageGenerator {
   generate(spec: GenerateImageSpec): Promise<GeneratedImageBytes>;
+  /** AIが組み立てた自由プロンプトから生成（人物ガードは内部で強制）。 */
+  generateFromPrompt(
+    scene: string,
+    aspectRatio?: GenerateImageSpec["aspectRatio"],
+  ): Promise<GeneratedImageBytes>;
 }
 
 export class ImageGeneratorError extends Error {
@@ -69,15 +74,40 @@ const PEOPLE_TERMS = [
   "笑顔",
 ];
 
-/** プロンプトに人物要求が含まれていれば拒否する（倫理ガード）。 */
+/** 直前に否定語があれば「人物を出さない指示」とみなし許容する（例: "no people"）。 */
+const NEGATIONS = [
+  "no ",
+  "without ",
+  "not ",
+  "avoid",
+  "exclud",
+  "free of",
+  "absent",
+  "なし",
+  "無人",
+  "描かない",
+  "含まない",
+  "入れない",
+];
+
+/** プロンプトに「人物を出す」要求が含まれていれば拒否する（倫理ガード）。
+ *  "no people" のような否定形は許容する。 */
 export function assertNoPeople(text: string): void {
   const lower = text.toLowerCase();
-  const hit = PEOPLE_TERMS.find((t) => lower.includes(t.toLowerCase()));
-  if (hit) {
-    throw new ImageGeneratorError(
-      `人物を含む画像の生成は行いません（検出語: 「${hit}」）。作業風景の道具・作品・室内など人物なしの雰囲気画像をご指定ください。`,
-      "rejected_people",
-    );
+  for (const t of PEOPLE_TERMS) {
+    const term = t.toLowerCase();
+    let idx = lower.indexOf(term);
+    while (idx !== -1) {
+      const before = lower.slice(Math.max(0, idx - 15), idx);
+      const negated = NEGATIONS.some((n) => before.includes(n));
+      if (!negated) {
+        throw new ImageGeneratorError(
+          `人物を含む画像の生成は行いません（検出語: 「${t}」）。作業風景の道具・作品・室内など人物なしの雰囲気画像をご指定ください。`,
+          "rejected_people",
+        );
+      }
+      idx = lower.indexOf(term, idx + term.length);
+    }
   }
 }
 
@@ -119,18 +149,50 @@ class GeminiImageGenerator implements ImageGenerator {
 
   async generate(spec: GenerateImageSpec): Promise<GeneratedImageBytes> {
     const base = buildAtmospherePrompt(spec.kind, spec.extra);
-    const ar = spec.aspectRatio ?? "4:3";
-    const prompt = `Generate a photorealistic photograph. ${base} Aspect ratio ${ar}. ${NEGATIVE_TEXT}`;
+    return this.render(base, spec.aspectRatio ?? "4:3");
+  }
+
+  async generateFromPrompt(
+    scene: string,
+    aspectRatio?: GenerateImageSpec["aspectRatio"],
+  ): Promise<GeneratedImageBytes> {
+    // 自由プロンプトでも人物要求は拒否（倫理ガード）。
+    assertNoPeople(scene);
+    const style =
+      "warm, gentle, hopeful mood, soft natural light, documentary photography, shallow depth of field, no people";
+    return this.render(`${scene.trim()}. Style: ${style}.`, aspectRatio ?? "4:3");
+  }
+
+  /** プロンプトを画像へレンダリングする共通処理。 */
+  private async render(
+    scene: string,
+    ar: NonNullable<GenerateImageSpec["aspectRatio"]>,
+  ): Promise<GeneratedImageBytes> {
+    const prompt = `Generate a photorealistic photograph. ${scene} Aspect ratio ${ar}. ${NEGATIVE_TEXT}`;
     const ai = new GoogleGenAI({ apiKey: this.apiKey });
-    let res: Awaited<ReturnType<typeof ai.models.generateContent>>;
-    try {
-      res = await ai.models.generateContent({
-        model: this.model,
-        contents: prompt,
-      });
-    } catch (e) {
+    // 一時的な過負荷(503/UNAVAILABLE/deadline)は数回リトライする。
+    let res: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        res = await ai.models.generateContent({ model: this.model, contents: prompt });
+        break;
+      } catch (e) {
+        lastErr = e;
+        const msg = (e as Error).message ?? "";
+        const transient = /503|unavailable|deadline|overload|timeout|429/i.test(msg);
+        if (!transient || attempt === 2) {
+          throw new ImageGeneratorError(
+            `画像生成APIの呼び出しに失敗しました: ${msg}`,
+            "api",
+          );
+        }
+        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      }
+    }
+    if (!res) {
       throw new ImageGeneratorError(
-        `画像生成APIの呼び出しに失敗しました: ${(e as Error).message}`,
+        `画像生成APIの呼び出しに失敗しました: ${(lastErr as Error)?.message ?? "unknown"}`,
         "api",
       );
     }
