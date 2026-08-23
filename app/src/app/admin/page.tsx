@@ -2,6 +2,7 @@
 // アクセスは middleware の Basic 認証で保護。集計は server/admin/metrics。
 
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getDashboardData } from "@/server/admin/metrics.js";
 import styles from "./admin.module.css";
 
@@ -64,7 +65,12 @@ export default async function AdminPage() {
     <main className={styles.shell}>
       <header className={styles.head}>
         <h1 className={styles.title}>管理ダッシュボード</h1>
-        <p className={styles.sub}>登録事業所 {totalFacilities.toLocaleString()} 件</p>
+        <p className={styles.sub}>
+          登録事業所 {totalFacilities.toLocaleString()} 件
+          <Link href="/admin/knowledge" style={{ marginLeft: "1rem" }}>
+            修正ナレッジ →
+          </Link>
+        </p>
       </header>
 
       <section aria-labelledby="funnel-h">
