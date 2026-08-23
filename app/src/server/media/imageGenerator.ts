@@ -105,11 +105,12 @@ export function buildAtmospherePrompt(kind: AtmosphereKind, extra?: string): str
   return `${base}.${extraPart} Style: ${style}.`;
 }
 
-/** 常に抑制する要素（顔・実在人物・文字・ロゴ）。 */
-const NEGATIVE_PROMPT =
-  "human faces, identifiable people, portraits, crowds, text, letters, watermark, logo, brand, deformed hands";
+/** 常に抑制する要素（顔・実在人物・文字・ロゴ）。プロンプト文に統合する
+ *  （negativePrompt パラメータは Gemini Developer API では非対応のため）。 */
+const NEGATIVE_TEXT =
+  "Important: absolutely no people, no human faces, no portraits, no crowds. No text, letters, captions, watermarks, logos or brand names anywhere in the image.";
 
-/** Gemini (Imagen) による生成。GEMINI_API_KEY と画像モデルが必要。 */
+/** Gemini 画像モデル（gemini-2.5-flash-image 等）による生成。generateContent を使う。 */
 class GeminiImageGenerator implements ImageGenerator {
   constructor(
     private readonly apiKey: string,
@@ -117,19 +118,15 @@ class GeminiImageGenerator implements ImageGenerator {
   ) {}
 
   async generate(spec: GenerateImageSpec): Promise<GeneratedImageBytes> {
-    const prompt = buildAtmospherePrompt(spec.kind, spec.extra);
+    const base = buildAtmospherePrompt(spec.kind, spec.extra);
+    const ar = spec.aspectRatio ?? "4:3";
+    const prompt = `Generate a photorealistic photograph. ${base} Aspect ratio ${ar}. ${NEGATIVE_TEXT}`;
     const ai = new GoogleGenAI({ apiKey: this.apiKey });
-    let res;
+    let res: Awaited<ReturnType<typeof ai.models.generateContent>>;
     try {
-      res = await ai.models.generateImages({
+      res = await ai.models.generateContent({
         model: this.model,
-        prompt,
-        config: {
-          numberOfImages: 1,
-          aspectRatio: spec.aspectRatio ?? "4:3",
-          negativePrompt: NEGATIVE_PROMPT,
-          includeRaiReason: true,
-        },
+        contents: prompt,
       });
     } catch (e) {
       throw new ImageGeneratorError(
@@ -137,18 +134,21 @@ class GeminiImageGenerator implements ImageGenerator {
         "api",
       );
     }
-    const first = res.generatedImages?.[0];
-    if (first?.raiFilteredReason) {
-      throw new ImageGeneratorError(
-        `安全フィルタにより生成がブロックされました: ${first.raiFilteredReason}`,
-        "blocked",
-      );
-    }
-    const b64 = first?.image?.imageBytes;
+    const parts = res.candidates?.[0]?.content?.parts ?? [];
+    const imgPart = parts.find((p) => p.inlineData?.data);
+    const b64 = imgPart?.inlineData?.data;
     if (!b64) {
+      const finish = res.candidates?.[0]?.finishReason;
+      if (finish && finish !== "STOP") {
+        throw new ImageGeneratorError(
+          `安全フィルタ等により生成がブロックされました: ${finish}`,
+          "blocked",
+        );
+      }
       throw new ImageGeneratorError("生成結果に画像データがありません。", "empty");
     }
-    return { bytes: new Uint8Array(Buffer.from(b64, "base64")), contentType: "image/png" };
+    const contentType = imgPart?.inlineData?.mimeType ?? "image/png";
+    return { bytes: new Uint8Array(Buffer.from(b64, "base64")), contentType };
   }
 }
 
@@ -161,6 +161,6 @@ export function getImageGenerator(): ImageGenerator {
       "not_configured",
     );
   }
-  const model = process.env.IMAGE_MODEL ?? "imagen-4.0-generate-001";
+  const model = process.env.IMAGE_MODEL ?? "gemini-2.5-flash-image";
   return new GeminiImageGenerator(apiKey, model);
 }
