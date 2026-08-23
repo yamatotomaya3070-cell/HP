@@ -660,6 +660,18 @@ body {
   letter-spacing: 0.03em;
 }
 
+/* AI生成サンプルの注意書き（要望2） */
+.preview-notice {
+  background: #fff7e6;
+  color: #7a5b1e;
+  border-bottom: 1px solid #f0dcae;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.7;
+  padding: 0.7rem 1.2rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

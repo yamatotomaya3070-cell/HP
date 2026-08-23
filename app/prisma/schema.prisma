@@ -446,3 +446,20 @@ model AuditLog {
   @@index([action])
   @@map("audit_logs")
 }
+
+/// 生成/アップロード画像の保存（本番の Blob 代替。/api/media/[id] で配信）。
+/// 生成は手元バッチ、配信はサーバーレスという構成に合わせ、圧縮済みバイト列をDBに持つ。
+model MediaAsset {
+  id String @id @default(cuid())
+
+  facilityId  String? @map("facility_id")
+  contentType String  @map("content_type") // 例: image/webp
+  data        Bytes // 圧縮済み画像バイト列
+  width       Int?
+  height      Int?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([facilityId])
+  @@map("media_assets")
+}

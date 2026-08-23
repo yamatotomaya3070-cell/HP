@@ -15,6 +15,7 @@
     "prisma:migrate": "prisma migrate dev",
     "import": "tsx scripts/import.ts",
     "generate": "tsx scripts/generate-site.ts",
+    "generate-rich": "tsx scripts/generate-rich.ts",
     "edit": "tsx scripts/edit-site.ts",
     "edit-link": "tsx scripts/edit-link.ts",
     "publish-link": "tsx scripts/publish-link.ts",

@@ -48,6 +48,10 @@ export default async function PreviewPage({
       <div className="preview-banner">
         非公開プレビュー ・ このURLは検索エンジンに表示されません
       </div>
+      <div className="preview-notice">
+        ⚠️ この内容はAIが自動生成したサンプルです。文章・画像は御社の実際の内容と異なる場合があります。
+        このメールにご返信いただければ、無料で修正します（例：「送迎あります」「工賃は月平均〇円」など）。
+      </div>
       <SiteTemplate data={parsed.data} />
     </>
   );
