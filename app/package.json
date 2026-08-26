@@ -19,6 +19,7 @@
     "edit": "tsx scripts/edit-site.ts",
     "edit-link": "tsx scripts/edit-link.ts",
     "publish-link": "tsx scripts/publish-link.ts",
+    "billing-link": "tsx scripts/billing-link.ts",
     "mail-inbound": "tsx scripts/mail-inbound.ts",
     "campaign-send": "tsx scripts/campaign-send.ts",
     "screenshot": "tsx scripts/screenshot.ts",

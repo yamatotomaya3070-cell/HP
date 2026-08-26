@@ -4,7 +4,7 @@
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export type TokenPurpose = "edit" | "reply" | "publish" | "unsubscribe";
+export type TokenPurpose = "edit" | "reply" | "publish" | "unsubscribe" | "billing";
 
 interface TokenPayload {
   /** facility id */
