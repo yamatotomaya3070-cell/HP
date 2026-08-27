@@ -14,6 +14,7 @@ import {
 } from "@/lib/siteData.js";
 import { generateSiteForFacility } from "./generateSite.js";
 import { generateCustomContent } from "./customizeContent.js";
+import { researchFacility } from "./researchFacility.js";
 import { geocodeAddress } from "./geocode.js";
 import { getImageGenerator } from "@/server/media/imageGenerator.js";
 import { saveGeneratedImage } from "@/server/media/imageStore.js";
@@ -54,12 +55,25 @@ export async function generateRichSiteForFacility(
   // 1. サイト（slug）を確保（無ければ初期生成で作る）
   const base = await generateSiteForFacility(facilityId);
 
-  // 2. その企業らしい内容をAI生成
+  // 2. Web検索で実情報をリサーチ（作業内容・サービス等）→ 内容生成の根拠にする
+  const research = await researchFacility({
+    name: facility.name,
+    corpName: facility.corpName,
+    address: facility.address,
+    prefecture: facility.prefecture,
+    url: facility.url,
+  });
+  if (research.summary) {
+    console.log(`  リサーチ取得（${research.sources.length}ソース）`);
+  }
+
+  // 2.5 その企業らしい内容をAI生成（リサーチ結果を根拠に）
   const content = await generateCustomContent({
     name: facility.name,
     corpName: facility.corpName,
     address: facility.address,
     prefecture: facility.prefecture,
+    siteText: research.summary || undefined,
   });
 
   // 3. テーマに合った画像を生成しDB保存
