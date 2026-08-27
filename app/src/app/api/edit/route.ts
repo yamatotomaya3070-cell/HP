@@ -9,6 +9,8 @@ import { createEditModel } from "@/server/edit/editModelFactory.js";
 import { type EditModel, EditModelError } from "@/server/edit/editModel.js";
 
 export const dynamic = "force-dynamic";
+// AI編集は画像生成(数十秒)を含むことがあるため実行時間上限を延長する。
+export const maxDuration = 300;
 
 const bodySchema = z.object({
   token: z.string().min(1),

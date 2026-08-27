@@ -128,6 +128,10 @@ function applyOne(data: SiteData, op: EditOp): SiteData {
           photos: op.photos,
         },
       };
+    case "generate_image":
+      // 画像生成は副作用（API・保存）を伴うため runEdit 側で set_hero_media/add_photo に
+      // 解決してから適用する。ここに届いた場合（未解決）は安全に無視する。
+      return data;
     case "set_contact":
       return {
         ...data,

@@ -29,6 +29,7 @@ const OP_LABELS: Record<string, string> = {
   set_access: "アクセス",
   add_photo: "写真追加",
   set_gallery: "写真ギャラリー",
+  generate_image: "画像生成",
   set_contact: "お問い合わせ",
   set_theme: "配色",
   reorder_sections: "並び替え",

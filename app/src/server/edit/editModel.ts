@@ -61,8 +61,11 @@ export function buildSystemPrompt(): string {
     '- set_highlights: { "op":"set_highlights", "highlights":[{"icon":<アイコンキー>,"label":"見学受付中"}] }  ← 最大4つ。ヒーロー下のバッジ',
     '- set_daily_flow: { "op":"set_daily_flow", "heading"?:"", "steps":[{"time":"10:00","title":"朝礼","description":"","icon"?:<アイコンキー>}] }  ← 一日の流れ。最大8',
     '- set_access: { "op":"set_access", "heading"?:"", "mapQuery"?:"<地図の住所や施設名>", "note"?:"" }  ← 地図は通常 住所から自動表示。mapQueryは上書き時のみ',
-    '- add_photo: { "op":"add_photo", "photo":{"url":"<画像URL>","alt":"","caption":""} }  ← ギャラリー写真を1枚追加',
+    '- add_photo: { "op":"add_photo", "photo":{"url":"<画像URL>","alt":"","caption":""} }  ← 既にURLがある写真を1枚追加',
     '- set_gallery: { "op":"set_gallery", "heading"?:"", "photos":[{"url":"","alt":"","caption":""}] }  ← 写真を全置換',
+    '- generate_image: { "op":"generate_image", "target":"hero"|"gallery", "prompt":"<英語の情景・人物なし>", "alt"?:"" }',
+    "    ← 事業所が「画像を作って/生成して/追加して/変えて」と求めたとき使う。AIが実際に画像生成して挿入する。",
+    "    target=hero はメインビジュアル、gallery はギャラリー追加。prompt は作業道具・作品・室内・自然などの英語情景で、人物語(people/person/worker等)は書かない。",
     '- set_contact: { "op":"set_contact", "heading"?:"", "note"?:"", "ctaTitle"?:"", "ctaBody"?:"", "ctaLabel"?:"" }',
     '- set_theme: { "op":"set_theme", "preset":"' + THEME_PRESETS.join('"|"') + '" }',
     '- reorder_sections: { "op":"reorder_sections", "order":[<セクション名の配列>] }',
@@ -100,6 +103,12 @@ export function buildSystemPrompt(): string {
       '{"time":"15:00","title":"終礼","description":"振り返りをして終わります","icon":"flag"}]},' +
       '{"op":"set_highlights","highlights":[' +
       '{"icon":"bus","label":"送迎相談可"},{"icon":"lunch","label":"昼食あり"}]}] }',
+    "指示「作業風景の写真を追加して」→",
+    '{ "message":"作業風景の画像を生成して追加しました。", "ops":[' +
+      '{"op":"generate_image","target":"gallery","prompt":"a tidy work table in a small Japanese welfare workshop with neatly arranged craft materials and simple tools, soft natural light","alt":"作業風景"}] }',
+    "指示「ヒーロー画像をパンを焼く感じに変えて」→",
+    '{ "message":"ヒーロー画像を差し替えました。", "ops":[' +
+      '{"op":"generate_image","target":"hero","prompt":"freshly baked bread and pastries on a wooden bakery counter, warm morning light, no text","alt":"パン作りの様子"}] }',
   ].join("\n");
 }
 

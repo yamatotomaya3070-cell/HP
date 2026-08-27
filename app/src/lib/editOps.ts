@@ -108,6 +108,15 @@ export const editOpSchema = z.discriminatedUnion("op", [
     heading: z.string().max(80).optional(),
     photos: z.array(photoSchema).max(30),
   }),
+  // AIで画像を生成して挿入する。target=hero はメインビジュアル、gallery はギャラリー追加。
+  // prompt は人物なしの情景（作業道具・作品・室内・自然）。runEdit が生成→保存→URL化して
+  // set_hero_media / add_photo に解決してから適用する。
+  z.object({
+    op: z.literal("generate_image"),
+    target: z.enum(["hero", "gallery"]),
+    prompt: z.string().min(1).max(400),
+    alt: z.string().max(200).optional(),
+  }),
   z.object({
     op: z.literal("set_theme"),
     preset: z.enum(THEME_PRESETS),
@@ -146,6 +155,7 @@ export const OP_NAMES = [
   "set_access",
   "add_photo",
   "set_gallery",
+  "generate_image",
   "set_contact",
   "set_theme",
   "reorder_sections",

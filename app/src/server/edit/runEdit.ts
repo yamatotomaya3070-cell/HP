@@ -5,6 +5,7 @@
 import { prisma } from "@/lib/db.js";
 import { siteDataSchema } from "@/lib/siteData.js";
 import { applyOps } from "./applyOps.js";
+import { resolveImageOps } from "./resolveImageOps.js";
 import { type EditModel } from "./editModel.js";
 
 export type EditChannel = "email" | "editor";
@@ -91,14 +92,20 @@ export async function runEdit(
     throw e;
   }
 
-  const { data: nextData, appliedCount, rejected } = applyOps(data, proposal.ops);
+  // 画像生成オペ(generate_image)は副作用を伴うため、適用前に実生成→URL化して解決する。
+  const resolved = await resolveImageOps(input.facilityId, proposal.ops);
+  const { data: nextData, appliedCount, rejected } = applyOps(data, resolved.ops);
 
   await prisma.editRequest.update({
     where: { id: editRequest.id },
     data: {
       status: appliedCount > 0 ? "applied" : "rejected",
       parsed: { instruction: input.instruction },
-      structured: { ops: proposal.ops, message: proposal.message },
+      structured: {
+        ops: proposal.ops,
+        message: proposal.message,
+        imagesGenerated: resolved.generated,
+      },
       rejectionReason: appliedCount === 0 ? "適用可能な変更がありませんでした" : null,
     },
   });
