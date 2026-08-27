@@ -60,6 +60,7 @@ enum SiteVersionOrigin {
 enum EditRequestChannel {
   email
   editor
+  line
 }
 
 enum EditRequestStatus {
@@ -177,6 +178,7 @@ model Facility {
   payments     Payment[]
   leadEvents   LeadEvent[]
   auditLogs    AuditLog[]
+  lineUsers    LineUser[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -445,6 +447,33 @@ model AuditLog {
   @@index([facilityId])
   @@index([action])
   @@map("audit_logs")
+}
+
+/// LINE友だち（LINE userId ↔ 事業所）。ヒアリングの状態も保持する。
+model LineUser {
+  id String @id @default(cuid())
+
+  /// LINE の userId（送信先の宛先）。
+  lineUserId String @unique @map("line_user_id")
+
+  /// 紐付いた事業所（ヒアリング完了で確定）。未確定なら null。
+  facilityId String?   @map("facility_id")
+  facility   Facility? @relation(fields: [facilityId], references: [id])
+
+  /// ヒアリングの現在ステップ（例: ask_name / ask_url / ... / done / editing）。
+  step String @default("start")
+
+  /// ヒアリングで集めた項目（name/url/jobInfo/imageWish 等の途中経過）。
+  draft Json?
+
+  /// LINEの表示名（取得できれば）。
+  displayName String? @map("display_name")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([facilityId])
+  @@map("line_users")
 }
 
 /// 生成/アップロード画像の保存（本番の Blob 代替。/api/media/[id] で配信）。

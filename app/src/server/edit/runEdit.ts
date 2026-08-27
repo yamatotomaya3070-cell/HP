@@ -8,7 +8,7 @@ import { applyOps } from "./applyOps.js";
 import { resolveImageOps } from "./resolveImageOps.js";
 import { type EditModel } from "./editModel.js";
 
-export type EditChannel = "email" | "editor";
+export type EditChannel = "email" | "editor" | "line";
 
 export interface RunEditInput {
   facilityId: string;
@@ -123,7 +123,8 @@ export async function runEdit(
     };
   }
 
-  const origin = input.channel === "email" ? "ai_email" : "ai_editor";
+  // SiteVersionOrigin は email/editor 系。line はメール同様の遠隔編集として ai_email に寄せる。
+  const origin = input.channel === "editor" ? "ai_editor" : "ai_email";
 
   const newVersionId = await prisma.$transaction(async (tx) => {
     const version = await tx.siteVersion.create({
