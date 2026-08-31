@@ -7,10 +7,13 @@ import {
   STEPS,
   type Step,
   type HearingDraft,
+  type AdvanceContext,
   advance,
+  isResetCommand,
   welcomeMessages,
   getOrCreateSession,
 } from "./hearing.js";
+import { findFacilityCandidates, isSelfBindable } from "./matchFacility.js";
 import { generateRichSiteForFacility } from "@/server/generate/generateRichSite.js";
 import { runEdit } from "@/server/edit/runEdit.js";
 import { createEditModel } from "@/server/edit/editModelFactory.js";
@@ -46,18 +49,45 @@ export async function handleLineEvent(event: LineEvent): Promise<void> {
     return;
   }
 
-  // ヒアリング進行。
+  // ヒアリング進行。名称の回答時だけ、収集済みリストと照合して候補を渡す。
   const draft = (session.draft ?? {}) as HearingDraft;
-  const result = advance(step, draft, text);
+  const ctx = await buildAdvanceContext(step, text);
+  const result = advance(step, draft, text, ctx);
   await prisma.lineUser.update({
     where: { id: session.id },
     data: { step: result.nextStep, draft: result.draft as object },
   });
   await replyText(replyToken, result.replies);
 
+  if (result.escalate) {
+    await escalate(session.facilityId ?? null, userId, result.escalate.reason);
+  }
+
   // 全項目そろったら生成を実行（reply後にpushで結果を返す）。
   if (result.triggerGenerate) {
     await runGenerate(session.id, userId, result.draft);
+  }
+}
+
+/** 名称の回答時のみ収集リストを照合する（検索失敗は候補なしとして続行）。 */
+async function buildAdvanceContext(step: Step, text: string): Promise<AdvanceContext> {
+  const isNameStep = step === STEPS.ASK_NAME || step === STEPS.START;
+  if (!isNameStep || isResetCommand(text)) return {};
+  try {
+    const found = await findFacilityCandidates(text);
+    return {
+      candidates: found.candidates.map((c) => ({
+        id: c.id,
+        name: c.name,
+        address: c.address,
+        prefecture: c.prefecture,
+        url: c.url,
+      })),
+      protectedMatchCount: found.protectedCount,
+    };
+  } catch (e) {
+    console.log(`事業所照合に失敗（新規として続行）: ${(e as Error).message}`);
+    return {};
   }
 }
 
@@ -112,7 +142,11 @@ async function runGenerate(
       where: { id: sessionId },
       data: { facilityId: facility.id, step: STEPS.EDITING },
     });
-    const r = await generateRichSiteForFacility(facility.id, { withImages: true });
+    // ヒアリングで本人が語った内容は最も確かな根拠なので、生成へ渡す。
+    const r = await generateRichSiteForFacility(facility.id, {
+      withImages: true,
+      ownerNotes: draft.jobInfo?.trim() || undefined,
+    });
 
     // アップロード済み画像があればギャラリーに反映。
     for (const id of draft.uploadedImageIds ?? []) {
@@ -135,10 +169,40 @@ async function runGenerate(
   }
 }
 
-/** ドラフトから Facility を作成 or 既存を再利用。 */
+/**
+ * ドラフトから Facility を確定する。
+ * 照合で本人確認が取れていれば収集済みレコードを再利用し（住所/TEL/法人名を活かす）、
+ * 無ければ新規作成する。
+ */
 async function ensureFacility(draft: HearingDraft) {
+  if (draft.matchedFacilityId) {
+    // 多層防御: 候補提示から確定までの間に持ち主が確定していないか再確認する。
+    // 保護対象になっていたら、その事業所には一切書き込まず新規作成にフォールバックする。
+    const bindable = await isSelfBindable(draft.matchedFacilityId);
+    if (!bindable) {
+      console.log(
+        `紐付けを拒否（保護対象の事業所）: ${draft.matchedFacilityId} → 新規作成にフォールバック`,
+      );
+    }
+    const existing = bindable
+      ? await prisma.facility.findUnique({ where: { id: draft.matchedFacilityId } })
+      : null;
+    if (existing) {
+      // ヒアリングで得たURLは、収集データが空のときだけ補う（既存の事実を上書きしない）。
+      if (draft.url && !existing.url) {
+        return prisma.facility.update({
+          where: { id: existing.id },
+          data: { url: draft.url },
+        });
+      }
+      return existing;
+    }
+    if (bindable) {
+      console.log(`照合済み事業所が見つかりません（新規作成へ）: ${draft.matchedFacilityId}`);
+    }
+  }
+
   const name = draft.name?.trim() || "事業所";
-  // 既存の同名（LINE作成分）があれば再利用、無ければ新規。
   const facilityNumber = `line-${Date.now()}`;
   return prisma.facility.create({
     data: {
@@ -233,8 +297,13 @@ async function addUploadedPhoto(facilityId: string, url: string): Promise<void> 
   });
 }
 
-/** 対応できない要望を運営へエスカレーション（監査ログ＋任意で運営LINE通知）。 */
-async function escalate(facilityId: string, userId: string, text: string): Promise<void> {
+/** 対応できない要望を運営へエスカレーション（監査ログ＋任意で運営LINE通知）。
+ *  facilityId は未確定（紐付け前の本人確認待ちなど）なら null。 */
+async function escalate(
+  facilityId: string | null,
+  userId: string,
+  text: string,
+): Promise<void> {
   await prisma.auditLog.create({
     data: {
       facilityId,
@@ -246,7 +315,8 @@ async function escalate(facilityId: string, userId: string, text: string): Promi
   const opUserId = process.env.LINE_OPERATOR_USER_ID;
   if (opUserId) {
     const { pushText } = await import("./client.js");
-    await pushText(opUserId, [`【要対応】事業所ID ${facilityId}\n内容: ${text}`]);
+    const who = facilityId ? `事業所ID ${facilityId}` : `未紐付け（LINE ${userId}）`;
+    await pushText(opUserId, [`【要対応】${who}\n内容: ${text}`]);
   }
 }
 

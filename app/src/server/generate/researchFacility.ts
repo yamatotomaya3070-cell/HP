@@ -13,6 +13,8 @@ export interface FacilityResearchSeed {
   address?: string | null;
   prefecture?: string | null;
   url?: string | null;
+  /** 事業所本人の申告（検索対象を絞る手掛かりになる）。 */
+  ownerNotes?: string | null;
 }
 
 export interface ResearchResult {
@@ -38,6 +40,7 @@ export async function researchFacility(
     seed.prefecture ? `地域: ${seed.prefecture}` : "",
     seed.address ? `住所: ${seed.address}` : "",
     seed.url ? `公式サイト: ${seed.url}` : "",
+    seed.ownerNotes ? `事業所からの申告（照合の手掛かり）: ${seed.ownerNotes.slice(0, 500)}` : "",
   ]
     .filter(Boolean)
     .join("\n");

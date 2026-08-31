@@ -47,7 +47,7 @@ async function genImage(
 /** 事業所IDから「その企業らしい」リッチHPを生成し、新バージョンを現行にする。 */
 export async function generateRichSiteForFacility(
   facilityId: string,
-  opts: { withImages?: boolean } = {},
+  opts: { withImages?: boolean; ownerNotes?: string } = {},
 ): Promise<RichGenerateResult> {
   const facility = await prisma.facility.findUnique({ where: { id: facilityId } });
   if (!facility) throw new Error(`事業所が見つかりません: ${facilityId}`);
@@ -62,18 +62,20 @@ export async function generateRichSiteForFacility(
     address: facility.address,
     prefecture: facility.prefecture,
     url: facility.url,
+    ownerNotes: opts.ownerNotes,
   });
   if (research.summary) {
     console.log(`  リサーチ取得（${research.sources.length}ソース）`);
   }
 
-  // 2.5 その企業らしい内容をAI生成（リサーチ結果を根拠に）
+  // 2.5 その企業らしい内容をAI生成（本人申告 > リサーチ結果 の優先度で根拠にする）
   const content = await generateCustomContent({
     name: facility.name,
     corpName: facility.corpName,
     address: facility.address,
     prefecture: facility.prefecture,
     siteText: research.summary || undefined,
+    ownerNotes: opts.ownerNotes,
   });
 
   // 3. テーマに合った画像を生成しDB保存
