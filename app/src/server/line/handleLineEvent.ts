@@ -43,6 +43,21 @@ export async function handleLineEvent(event: LineEvent): Promise<void> {
   const text = event.message.text;
   const step = session.step as Step;
 
+  const draft = (session.draft ?? {}) as HearingDraft;
+
+  // 「やり直し」は編集モードからも効かせる（挨拶文で「いつでも」と案内しているため）。
+  // 編集モードの分岐より前に置かないと、リセット指示がAI編集へ流れてしまう。
+  // 既存の facilityId は保持する: 消すと当該事業所が保護対象から外れ、他人が名乗れてしまう。
+  if (isResetCommand(text)) {
+    const reset = advance(step, draft, text);
+    await prisma.lineUser.update({
+      where: { id: session.id },
+      data: { step: reset.nextStep, draft: reset.draft as object },
+    });
+    await replyText(replyToken, reset.replies);
+    return;
+  }
+
   // 生成後は編集モード。
   if (step === STEPS.EDITING && session.facilityId) {
     await onEdit(session.facilityId, userId, text, replyToken);
@@ -50,7 +65,6 @@ export async function handleLineEvent(event: LineEvent): Promise<void> {
   }
 
   // ヒアリング進行。名称の回答時だけ、収集済みリストと照合して候補を渡す。
-  const draft = (session.draft ?? {}) as HearingDraft;
   const ctx = await buildAdvanceContext(step, text);
   const result = advance(step, draft, text, ctx);
   await prisma.lineUser.update({

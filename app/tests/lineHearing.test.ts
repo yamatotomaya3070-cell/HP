@@ -184,6 +184,14 @@ describe("advance: 既存の流れを壊さない", () => {
     expect(r.nextStep).toBe(STEPS.ASK_NAME);
     expect(r.draft).toEqual({});
   });
+
+  test("編集モードからでも「やり直し」でヒアリングに戻る", () => {
+    // 生成後（編集モード）の利用者が最初からやり直せること。
+    const r = advance(STEPS.EDITING, { name: "A", matchedFacilityId: "fac_1" }, "やり直し");
+    expect(r.nextStep).toBe(STEPS.ASK_NAME);
+    expect(r.draft).toEqual({});
+    expect(r.draft.matchedFacilityId).toBeUndefined();
+  });
 });
 
 describe("isResetCommand", () => {
