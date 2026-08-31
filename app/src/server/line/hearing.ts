@@ -15,7 +15,8 @@ export const STEPS = {
   AWAITING_STAFF: "awaiting_staff",
   ASK_URL: "ask_url",
   ASK_INFO: "ask_info",
-  ASK_IMAGE: "ask_image",
+  ASK_PHOTOS: "ask_photos",
+  ASK_AI_IMAGE: "ask_ai_image",
   GENERATING: "generating",
   EDITING: "editing",
 } as const;
@@ -33,8 +34,8 @@ export interface DraftCandidate {
 export interface HearingDraft {
   name?: string;
   url?: string; // 既存HP（"なし"可）
-  jobInfo?: string; // 求人/会社情報
-  imageWish?: string; // 入れたい画像の希望（"AIで生成"可）
+  jobInfo?: string; // 事業所からの申告（既存HPがある場合は「現状との違い・変えたい点」）
+  useAiImages?: boolean; // AIで雰囲気画像を生成するか（写真アップと併用可）
   uploadedImageIds?: string[]; // LINEでアップされた画像の mediaAsset id
   candidates?: DraftCandidate[]; // 照合で提示した候補
   matchedFacilityId?: string; // 確認が取れた既存事業所
@@ -57,15 +58,25 @@ export function welcomeMessages(): string[] {
   ];
 }
 
-/** 次に送る質問文（step に対応）。 */
-export function questionFor(step: Step): string {
+/**
+ * 次に送る質問文。
+ *
+ * URLを聞く目的は「事業所の実際の情報を確認するため」であって、既存サイトを残す前提ではない。
+ * この商品は今のホームページの“乗り換え”なので、「現在のサイトと併用する」と受け取れる言い方
+ * （2つ持つ想定の文言）は使わない。あくまで正確な情報源として参照する、と伝える。
+ */
+export function questionFor(step: Step, opts: { hasUrl?: boolean } = {}): string {
   switch (step) {
     case STEPS.ASK_URL:
-      return "ありがとうございます。既存のホームページはありますか？\nあればURLを、なければ「なし」と送ってください。";
+      return "ありがとうございます。現在お使いのホームページはありますか？\n事業所の情報を正確に反映したいので、あればURLを教えてください（内容を確認させていただきます）。\n無ければ「なし」と送ってください。";
     case STEPS.ASK_INFO:
-      return "事業所の特徴や主な作業内容、求人・会社情報などがあれば教えてください。\n（例: 農作業と手工芸が中心／送迎あり／未経験歓迎 など。特になければ「おまかせ」と送ってください）";
-    case STEPS.ASK_IMAGE:
-      return "ホームページに入れたい写真はありますか？\nこのトークに画像を送っていただければ使用します。無ければ「AIで作成」と送ってください（AIが人物なしの雰囲気画像を作ります）。";
+      return opts.hasUrl
+        ? "ありがとうございます。サイトから事業所の情報を確認します。\n新しいホームページで特に伝えたいことや、今のサイトに載っていない最新の情報があれば教えてください。\n（例: 送迎を始めた／作業内容が変わった など。特になければ「おまかせ」と送ってください）"
+        : "事業所の特徴や主な作業内容、求人・会社情報などがあれば教えてください。\n（例: 農作業と手工芸が中心／送迎あり／未経験歓迎 など。特になければ「おまかせ」と送ってください）";
+    case STEPS.ASK_PHOTOS:
+      return "ホームページに載せたいお写真はありますか？\nこのトークに画像を送ってください（何枚でも可）。\n送り終わったら「次へ」、写真が無ければ「なし」と送ってください。";
+    case STEPS.ASK_AI_IMAGE:
+      return "AIで雰囲気の画像も作成しますか？\n「はい」または「いいえ」でお答えください。\n（人物は写さず、作業風景や室内などのイメージ画像を作ります。お写真と併用もできます）";
     default:
       return "";
   }
@@ -126,7 +137,7 @@ function afterMatch(draft: HearingDraft, matched: DraftCandidate): StepResult {
     return {
       nextStep: STEPS.ASK_INFO,
       draft: { ...d, url: matched.url },
-      replies: [intro, questionFor(STEPS.ASK_INFO)],
+      replies: [intro, questionFor(STEPS.ASK_INFO, { hasUrl: true })],
     };
   }
   return { nextStep: STEPS.ASK_URL, draft: d, replies: [intro, questionFor(STEPS.ASK_URL)] };
@@ -224,20 +235,35 @@ export function advance(
     case STEPS.ASK_URL: {
       const url = /^(なし|ない|無し)$/.test(t) ? "" : t;
       const d = { ...draft, url };
-      return { nextStep: STEPS.ASK_INFO, draft: d, replies: [questionFor(STEPS.ASK_INFO)] };
+      return {
+        nextStep: STEPS.ASK_INFO,
+        draft: d,
+        replies: [questionFor(STEPS.ASK_INFO, { hasUrl: Boolean(url) })],
+      };
     }
     case STEPS.ASK_INFO: {
       const info = /^(おまかせ|お任せ|特になし|なし)$/.test(t) ? "" : t;
       const d = { ...draft, jobInfo: info };
-      return { nextStep: STEPS.ASK_IMAGE, draft: d, replies: [questionFor(STEPS.ASK_IMAGE)] };
+      return { nextStep: STEPS.ASK_PHOTOS, draft: d, replies: [questionFor(STEPS.ASK_PHOTOS)] };
     }
-    case STEPS.ASK_IMAGE: {
-      const d = { ...draft, imageWish: t };
+    case STEPS.ASK_PHOTOS: {
+      // 画像そのものは onImage が draft に積む。ここは「送り終わった/無い」の合図を受ける。
+      return {
+        nextStep: STEPS.ASK_AI_IMAGE,
+        draft,
+        replies: [questionFor(STEPS.ASK_AI_IMAGE)],
+      };
+    }
+    case STEPS.ASK_AI_IMAGE: {
+      const useAiImages = !/^(いいえ|いらない|不要|なし|no)$/i.test(t);
+      const d = { ...draft, useAiImages };
       return {
         nextStep: STEPS.GENERATING,
         draft: d,
         replies: [
-          "ありがとうございます！内容を確認して、ホームページを作成します🛠️\n1〜2分ほどお待ちください…",
+          useAiImages
+            ? "ありがとうございます！内容を確認して、画像も作りながらホームページを作成します🛠️\n1〜2分ほどお待ちください…"
+            : "承知しました。お預かりした内容でホームページを作成します🛠️\n少々お待ちください…",
         ],
         triggerGenerate: true,
       };

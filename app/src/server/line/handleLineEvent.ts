@@ -157,13 +157,23 @@ async function runGenerate(
       data: { facilityId: facility.id, step: STEPS.EDITING },
     });
     // ヒアリングで本人が語った内容は最も確かな根拠なので、生成へ渡す。
+    // AI画像は本人の希望に従う（写真アップとの併用も可）。既定は生成する。
+    //
+    // 実際の事業所写真はAIの雰囲気画像より価値が高いので、頂いた写真があれば
+    // 1枚目を必ずヒーロー（最上部）に充て、AI画像はカード等に回す。
+    // 以前はAI画像がヒーローを占め、実写真がページ最下部の小さなサムネイルに
+    // 埋もれていたため「画像が反映されていない」ように見えていた。
+    const uploadedIds = draft.uploadedImageIds ?? [];
+    const heroFromUpload = uploadedIds.length > 0 ? `/api/media/${uploadedIds[0]}` : undefined;
+
     const r = await generateRichSiteForFacility(facility.id, {
-      withImages: true,
+      withImages: draft.useAiImages ?? true,
       ownerNotes: draft.jobInfo?.trim() || undefined,
+      heroImageUrl: heroFromUpload,
     });
 
-    // アップロード済み画像があればギャラリーに反映。
-    for (const id of draft.uploadedImageIds ?? []) {
+    // ヒーローに使った1枚を除き、残りをギャラリーへ。
+    for (const id of heroFromUpload ? uploadedIds.slice(1) : uploadedIds) {
       await addUploadedPhoto(facility.id, `/api/media/${id}`);
     }
 

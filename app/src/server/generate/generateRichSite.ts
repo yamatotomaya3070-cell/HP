@@ -15,6 +15,7 @@ import {
 import { generateSiteForFacility } from "./generateSite.js";
 import { generateCustomContent } from "./customizeContent.js";
 import { researchFacility } from "./researchFacility.js";
+import { fetchSiteText } from "./fetchSiteText.js";
 import { geocodeAddress } from "./geocode.js";
 import { getImageGenerator } from "@/server/media/imageGenerator.js";
 import { saveGeneratedImage } from "@/server/media/imageStore.js";
@@ -47,7 +48,7 @@ async function genImage(
 /** 事業所IDから「その企業らしい」リッチHPを生成し、新バージョンを現行にする。 */
 export async function generateRichSiteForFacility(
   facilityId: string,
-  opts: { withImages?: boolean; ownerNotes?: string } = {},
+  opts: { withImages?: boolean; ownerNotes?: string; heroImageUrl?: string } = {},
 ): Promise<RichGenerateResult> {
   const facility = await prisma.facility.findUnique({ where: { id: facilityId } });
   if (!facility) throw new Error(`事業所が見つかりません: ${facilityId}`);
@@ -55,7 +56,13 @@ export async function generateRichSiteForFacility(
   // 1. サイト（slug）を確保（無ければ初期生成で作る）
   const base = await generateSiteForFacility(facilityId);
 
-  // 2. Web検索で実情報をリサーチ（作業内容・サービス等）→ 内容生成の根拠にする
+  // 2. 既存HPがあるなら実際に読みに行く（検索頼みにせず一次情報を取る）
+  const siteText = await fetchSiteText(facility.url);
+  if (siteText) {
+    console.log(`  既存サイトを取得（${siteText.length}文字）: ${facility.url}`);
+  }
+
+  // 2.2 Web検索で実情報をリサーチ（作業内容・サービス等）→ 内容生成の根拠にする
   const research = await researchFacility({
     name: facility.name,
     corpName: facility.corpName,
@@ -68,26 +75,31 @@ export async function generateRichSiteForFacility(
     console.log(`  リサーチ取得（${research.sources.length}ソース）`);
   }
 
-  // 2.5 その企業らしい内容をAI生成（本人申告 > リサーチ結果 の優先度で根拠にする）
+  // 2.5 その企業らしい内容をAI生成
+  //     根拠の優先度: 本人申告 > 既存HPの実文面 > Web検索の要約
   const content = await generateCustomContent({
     name: facility.name,
     corpName: facility.corpName,
     address: facility.address,
     prefecture: facility.prefecture,
-    siteText: research.summary || undefined,
+    siteText: siteText || undefined,
+    researchSummary: research.summary || undefined,
     ownerNotes: opts.ownerNotes,
   });
 
   // 3. テーマに合った画像を生成しDB保存
   const withImages = opts.withImages ?? true;
-  let heroUrl = "";
+  // 事業所から頂いた写真をヒーローに使う場合は、AI生成より優先する。
+  let heroUrl = opts.heroImageUrl ?? "";
   const serviceUrls: string[] = [];
   let imagesGenerated = 0;
   const services = content.services.slice(0, 3);
   if (withImages) {
     const gen = getImageGenerator();
-    heroUrl = await genImage(gen, content.heroImagePrompt, "16:9", facilityId, 1280);
-    if (heroUrl) imagesGenerated += 1;
+    if (!heroUrl) {
+      heroUrl = await genImage(gen, content.heroImagePrompt, "16:9", facilityId, 1280);
+      if (heroUrl) imagesGenerated += 1;
+    }
     for (const s of services) {
       const url = await genImage(gen, s.imagePrompt, "4:3", facilityId, 800);
       serviceUrls.push(url);
@@ -115,7 +127,12 @@ export async function generateRichSiteForFacility(
       subheadline,
       catchCopy: content.catchCopy,
       image: heroUrl,
-      imageAlt: heroUrl ? `${facility.name}の作業風景（イメージ）` : "",
+      // 実写真は「イメージ」と断らない（実際の様子なので）。AI生成分のみ但し書きを付ける。
+      imageAlt: heroUrl
+        ? opts.heroImageUrl
+          ? `${facility.name}の様子`
+          : `${facility.name}の作業風景（イメージ）`
+        : "",
       highlights: content.highlights.slice(0, 4),
     },
     about: { heading: "私たちについて", body: content.aboutBody.slice(0, 4) },

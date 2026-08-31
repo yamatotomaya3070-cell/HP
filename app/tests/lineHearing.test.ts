@@ -166,18 +166,66 @@ describe("advance: 照合の確認", () => {
   });
 });
 
-describe("advance: 既存の流れを壊さない", () => {
-  test("特徴の質問のあとは画像の質問へ", () => {
-    const r = advance(STEPS.ASK_INFO, { name: "A" }, "農作業と手工芸");
-    expect(r.nextStep).toBe(STEPS.ASK_IMAGE);
-    expect(r.draft.jobInfo).toBe("農作業と手工芸");
+describe("advance: 既存HPの有無で聞き方を変える", () => {
+  test("URLを答えた人には、乗り換え前提で「新しいHPで伝えたいこと」を聞く", () => {
+    // Arrange / Act
+    const r = advance(STEPS.ASK_URL, { name: "A" }, "https://example.com");
+
+    // Assert
+    expect(r.draft.url).toBe("https://example.com");
+    expect(r.replies.join()).toContain("新しいホームページで特に伝えたいこと");
+    expect(r.replies.join()).not.toContain("事業所の特徴や主な作業内容");
   });
 
-  test("画像の回答で生成が始まる", () => {
-    const r = advance(STEPS.ASK_IMAGE, { name: "A" }, "AIで作成");
+  test("URLを聞く文面が「情報を正確に反映するため」と伝える（2つ持つ想定にしない）", () => {
+    const r = advance(STEPS.ASK_NAME, {}, "ひまわり作業所", { candidates: [] });
+    expect(r.replies.join()).toContain("正確に反映");
+  });
+
+  test("URLが無い人には従来どおり特徴・作業内容を聞く", () => {
+    const r = advance(STEPS.ASK_URL, { name: "A" }, "なし");
+    expect(r.draft.url).toBe("");
+    expect(r.replies.join()).toContain("事業所の特徴や主な作業内容");
+  });
+});
+
+describe("advance: 写真とAI画像を別々に聞く", () => {
+  test("特徴の質問のあとは写真の質問へ", () => {
+    const r = advance(STEPS.ASK_INFO, { name: "A" }, "農作業と手工芸");
+    expect(r.nextStep).toBe(STEPS.ASK_PHOTOS);
+    expect(r.draft.jobInfo).toBe("農作業と手工芸");
+    expect(r.replies.join()).toContain("お写真");
+  });
+
+  test("写真の合図のあとはAI画像の要否を聞く", () => {
+    const r = advance(STEPS.ASK_PHOTOS, { name: "A" }, "次へ");
+    expect(r.nextStep).toBe(STEPS.ASK_AI_IMAGE);
+    expect(r.triggerGenerate).toBeFalsy();
+  });
+
+  test("写真を送ったうえでAI画像も「はい」なら併用できる", () => {
+    // Arrange: onImage が積んだ想定の写真
+    const draft = { name: "A", uploadedImageIds: ["img_1"] };
+
+    // Act
+    const r = advance(STEPS.ASK_AI_IMAGE, draft, "はい");
+
+    // Assert
+    expect(r.draft.useAiImages).toBe(true);
+    expect(r.draft.uploadedImageIds).toEqual(["img_1"]);
     expect(r.nextStep).toBe(STEPS.GENERATING);
     expect(r.triggerGenerate).toBe(true);
   });
+
+  test("AI画像が「いいえ」なら生成しない指定で進む", () => {
+    const r = advance(STEPS.ASK_AI_IMAGE, { name: "A" }, "いいえ");
+    expect(r.draft.useAiImages).toBe(false);
+    expect(r.nextStep).toBe(STEPS.GENERATING);
+    expect(r.triggerGenerate).toBe(true);
+  });
+});
+
+describe("advance: 既存の流れを壊さない", () => {
 
   test("どのステップでも「やり直し」で最初に戻る", () => {
     const r = advance(STEPS.CONFIRM_FACILITY, { name: "A", candidates: [cand()] }, "やり直し");
