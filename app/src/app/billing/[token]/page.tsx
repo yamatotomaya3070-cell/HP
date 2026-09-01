@@ -126,17 +126,22 @@ function PlanCard({
   return (
     <div style={{ ...S.plan, ...(recommended ? S.planOn : null) }}>
       <div style={S.planHead}>
-        <span style={S.planName}>{name}</span>
-        {recommended && <span style={S.badge}>おすすめ</span>}
+        <div style={S.planNameWrap}>
+          <span style={S.planName}>{name}</span>
+          {recommended && <span style={S.badge}>おすすめ</span>}
+        </div>
+        <p style={S.planPrice}>
+          {price}
+          {suffix && <span style={S.planSuffix}>{suffix}</span>}
+        </p>
       </div>
-      <p style={S.planPrice}>
-        {price}
-        {suffix && <span style={S.planSuffix}>{suffix}</span>}
-      </p>
       <ul style={S.planRows}>
         {rows.map((r) => (
           <li key={r.label} style={{ ...S.planRow, ...(r.ok ? null : S.planRowOff) }}>
-            <span aria-hidden="true">{r.ok ? "✓" : "×"}</span> {r.label}
+            <span style={r.ok ? S.tickOn : S.tickOff} aria-hidden="true">
+              {r.ok ? "✓" : "×"}
+            </span>
+            {r.label}
           </li>
         ))}
       </ul>
@@ -155,39 +160,62 @@ const S: Record<string, React.CSSProperties> = {
       '"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",Meiryo,system-ui,sans-serif',
     color: "#253026",
   },
+  // プランは縦に積む。横並びだと1枚が細くなり、スマホ（LINEのアプリ内ブラウザ）で読みにくい。
   plans: {
     display: "grid",
-    gap: ".7rem",
-    gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))",
+    gap: ".9rem",
+    gridTemplateColumns: "1fr",
     margin: "0 0 1.6rem",
   },
   plan: {
     border: "1px solid #e4eae6",
-    borderRadius: 14,
-    padding: "1rem .9rem",
+    borderRadius: 16,
+    padding: "1.1rem 1.2rem",
     background: "#fff",
   },
   planOn: {
     border: "2px solid #2f8f5b",
-    background: "#f2faf5",
+    background: "#f4faf6",
+    boxShadow: "0 6px 18px -12px rgba(47,143,91,.7)",
   },
-  planHead: { display: "flex", alignItems: "center", gap: ".5rem", marginBottom: ".2rem" },
-  planName: { fontWeight: 800, fontSize: "1rem" },
+  // 名前は左、価格は右。1行で「何がいくらか」が読める。
+  planHead: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: ".8rem",
+    flexWrap: "wrap",
+    paddingBottom: ".7rem",
+    marginBottom: ".7rem",
+    borderBottom: "1px solid #eef2ef",
+  },
+  planNameWrap: { display: "flex", alignItems: "center", gap: ".5rem" },
+  planName: { fontWeight: 800, fontSize: "1.12rem" },
   badge: {
-    fontSize: ".68rem",
+    fontSize: ".7rem",
     fontWeight: 700,
-    color: "#1f6f44",
-    background: "#dff0e6",
-    padding: ".15em .6em",
+    color: "#fff",
+    background: "#2f8f5b",
+    padding: ".2em .7em",
     borderRadius: 999,
+    whiteSpace: "nowrap",
   },
-  planPrice: { fontSize: "1.5rem", fontWeight: 800, margin: ".1rem 0 .7rem" },
-  planSuffix: { fontSize: ".8rem", fontWeight: 600, color: "#6b7a6f" },
-  planRows: { listStyle: "none", padding: 0, margin: 0, display: "grid", gap: ".35rem" },
-  planRow: { fontSize: ".85rem", lineHeight: 1.5, color: "#253026" },
-  planRowOff: { color: "#b9c4be" },
+  planPrice: { fontSize: "1.6rem", fontWeight: 800, margin: 0, whiteSpace: "nowrap" },
+  planSuffix: { fontSize: ".85rem", fontWeight: 600, color: "#6b7a6f", marginLeft: ".15em" },
+  planRows: { listStyle: "none", padding: 0, margin: 0, display: "grid", gap: ".5rem" },
+  planRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: ".55rem",
+    fontSize: ".95rem",
+    lineHeight: 1.5,
+    color: "#253026",
+  },
+  planRowOff: { color: "#a8b4ad" },
+  tickOn: { color: "#2f8f5b", fontWeight: 800, width: "1em", flexShrink: 0 },
+  tickOff: { color: "#c3cdc7", fontWeight: 800, width: "1em", flexShrink: 0 },
   card: {
-    width: "min(100% - 2rem, 720px)",
+    width: "min(100% - 2rem, 560px)",
     background: "#fff",
     borderRadius: 24,
     padding: "clamp(1.6rem,1rem+3vw,2.6rem)",
