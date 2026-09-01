@@ -7,6 +7,7 @@ import { siteDataSchema } from "@/lib/siteData.js";
 import { applyOps } from "./applyOps.js";
 import { resolveImageOps } from "./resolveImageOps.js";
 import { type EditModel } from "./editModel.js";
+import { getEntitlement } from "@/server/billing/entitlement.js";
 
 export type EditChannel = "email" | "editor" | "line";
 
@@ -28,6 +29,10 @@ export interface RunEditResult {
   siteId: string;
   /** 変更が適用された場合の新バージョンID（無変更なら現行のまま）。 */
   versionId: string;
+  /** 課金プランの都合で編集できなかった理由（各チャネルで案内文を出し分ける）。 */
+  blockedReason?: "free_limit" | "canceled";
+  /** 無料プランの残り回数（適用後の値）。有料プランでは undefined。 */
+  remainingFreeEdits?: number;
 }
 
 /** 事業所の現行サイトと有効バージョンを取得する。 */
@@ -57,17 +62,22 @@ export async function runEdit(
 ): Promise<RunEditResult> {
   const { site, data } = await loadCurrent(input.facilityId);
 
-  // 解約後(static)は AI編集不可（公開は継続するが編集のみ停止）。再契約で再開。
-  if (site.publishState === "static") {
+  // 料金プランによる編集ゲート（無料は3回まで／トライアル・契約中は無制限／解約後は停止）。
+  const entitlement = await getEntitlement(input.facilityId);
+  if (!entitlement.canEdit) {
     return {
       applied: false,
       appliedCount: 0,
       rejected: [],
       message:
-        "解約中のため、AIでの編集はご利用いただけません。再契約いただくと編集を再開できます。",
+        entitlement.blockedReason === "canceled"
+          ? "解約中のため、AIでの編集はご利用いただけません。再契約いただくと編集を再開できます。"
+          : "無料でお試しいただける編集は3回までです。ご登録いただくと、編集し放題とホームページの公開がご利用いただけます。",
       slug: site.slug,
       siteId: site.id,
       versionId: site.currentVersionId!,
+      blockedReason: entitlement.blockedReason,
+      remainingFreeEdits: entitlement.remainingFreeEdits,
     };
   }
 
@@ -167,5 +177,10 @@ export async function runEdit(
     slug: site.slug,
     siteId: site.id,
     versionId: newVersionId,
+    // この編集を消費した後の残り回数（無料プランのみ）。案内に使う。
+    remainingFreeEdits:
+      entitlement.remainingFreeEdits === undefined
+        ? undefined
+        : Math.max(0, entitlement.remainingFreeEdits - 1),
   };
 }

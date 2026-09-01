@@ -267,12 +267,24 @@ async function onEdit(
       },
       model,
     );
+    // 無料枠を使い切ったら、その場で料金カードを出す（課金導線）。
+    if (result.blockedReason === "free_limit") {
+      await sendPricingCard(facilityId, replyToken, result.message);
+      return;
+    }
+
     if (result.applied) {
       const url = `${APP_BASE()}/preview/${result.slug}`;
-      await replyText(replyToken, [
-        result.message || "反映しました！",
-        `▼ 更新後のプレビュー\n${url}`,
-      ]);
+      const texts = [result.message || "反映しました！", `▼ 更新後のプレビュー\n${url}`];
+      // 残り回数は見えて初めて効くので、無料プランでは毎回伝える。
+      if (result.remainingFreeEdits !== undefined) {
+        texts.push(
+          result.remainingFreeEdits > 0
+            ? `あと${result.remainingFreeEdits}回、無料で修正できます。`
+            : "無料でお試しいただける修正は、これで終了です。次からはご登録が必要になります。",
+        );
+      }
+      await replyText(replyToken, texts);
     } else {
       await replyText(replyToken, [
         result.message ||
@@ -319,6 +331,23 @@ async function addUploadedPhoto(facilityId: string, url: string): Promise<void> 
     where: { id: site.id },
     data: { currentVersionId: v.id },
   });
+}
+
+/** 料金カード（Flex）を、その事業所専用の決済リンク付きで送る。 */
+async function sendPricingCard(
+  facilityId: string,
+  replyToken: string,
+  leadText?: string,
+): Promise<void> {
+  const { issueToken } = await import("@/lib/tokens.js");
+  const { buildPricingCard } = await import("./pricingCard.js");
+  const { replyMessages } = await import("./client.js");
+
+  const token = issueToken(facilityId, "billing", 60 * 60 * 24 * 30);
+  const card = buildPricingCard(`${APP_BASE()}/billing/${token}`);
+
+  const messages: unknown[] = leadText ? [{ type: "text", text: leadText }, card] : [card];
+  await replyMessages(replyToken, messages);
 }
 
 /** 対応できない要望を運営へエスカレーション（監査ログ＋任意で運営LINE通知）。

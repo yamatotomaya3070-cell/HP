@@ -3,7 +3,7 @@ import {
   normalizePaymentEvent,
   PaymentProviderError,
 } from "@/server/billing/provider.js";
-import { TRIAL_DAYS, PUBLISH_FEE } from "@/server/billing/lifecycle.js";
+import { TRIAL_DAYS, MONTHLY_FEE, MONTHLY_FEE_PRO } from "@/server/billing/lifecycle.js";
 
 describe("決済イベント正規化", () => {
   it("trial_started を正規化", () => {
@@ -37,8 +37,9 @@ describe("決済イベント正規化", () => {
     ).toThrowError(PaymentProviderError);
   });
 
-  it("定数（14日・5000円）が仕様どおり", () => {
-    expect(TRIAL_DAYS).toBe(14);
-    expect(PUBLISH_FEE).toBe(5000);
+  it("料金体系の定数（7日トライアル・竹5,000円・松7,000円）が仕様どおり", () => {
+    expect(TRIAL_DAYS).toBe(7);
+    expect(MONTHLY_FEE).toBe(5000);
+    expect(MONTHLY_FEE_PRO).toBe(7000);
   });
 });
