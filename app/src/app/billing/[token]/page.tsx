@@ -16,7 +16,7 @@ import {
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
-  title: "ホームページの公開手続き",
+  title: "プランのご案内",
 };
 
 export default async function BillingPage({

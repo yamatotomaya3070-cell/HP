@@ -14,6 +14,14 @@ import {
   getOrCreateSession,
 } from "./hearing.js";
 import { findFacilityCandidates, isSelfBindable } from "./matchFacility.js";
+import {
+  MENU,
+  type MenuCommand,
+  parseMenuCommand,
+  howtoMessages,
+  faqMessages,
+  proConsultMessages,
+} from "./menuCommands.js";
 import { generateRichSiteForFacility } from "@/server/generate/generateRichSite.js";
 import { runEdit } from "@/server/edit/runEdit.js";
 import { createEditModel } from "@/server/edit/editModelFactory.js";
@@ -44,6 +52,14 @@ export async function handleLineEvent(event: LineEvent): Promise<void> {
   const step = session.step as Step;
 
   const draft = (session.draft ?? {}) as HearingDraft;
+
+  // リッチメニューのタップは、ヒアリング/編集より先に処理する。
+  // でないと「料金プラン」等が編集指示としてAIに渡ってしまう。
+  const menu = parseMenuCommand(text);
+  if (menu) {
+    await onMenuCommand(menu, session.facilityId, userId, replyToken);
+    return;
+  }
 
   // 「やり直し」は編集モードからも効かせる（挨拶文で「いつでも」と案内しているため）。
   // 編集モードの分岐より前に置かないと、リセット指示がAI編集へ流れてしまう。
@@ -331,6 +347,40 @@ async function addUploadedPhoto(facilityId: string, url: string): Promise<void> 
     where: { id: site.id },
     data: { currentVersionId: v.id },
   });
+}
+
+/** リッチメニューのタップに応答する。 */
+async function onMenuCommand(
+  menu: MenuCommand,
+  facilityId: string | null,
+  userId: string,
+  replyToken: string,
+): Promise<void> {
+  switch (menu) {
+    case MENU.PRICING: {
+      // 事業所が未確定なら決済リンクを出せないので、先にヒアリングへ案内する。
+      if (!facilityId) {
+        await replyText(replyToken, [
+          "まずはホームページをお作りします🌱",
+          "事業所の名称を教えてください。作成後、プランをご案内します。",
+        ]);
+        return;
+      }
+      await sendPricingCard(facilityId, replyToken);
+      return;
+    }
+    case MENU.HOWTO:
+      await replyText(replyToken, howtoMessages());
+      return;
+    case MENU.FAQ:
+      await replyText(replyToken, faqMessages());
+      return;
+    case MENU.PRO: {
+      await replyText(replyToken, proConsultMessages());
+      await escalate(facilityId, userId, "リッチメニューから「プロに相談」");
+      return;
+    }
+  }
 }
 
 /** 料金カード（Flex）を、その事業所専用の決済リンク付きで送る。 */
