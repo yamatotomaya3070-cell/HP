@@ -59,7 +59,7 @@ export default async function BillingPage({
 
         <div style={S.plans}>
           <PlanCard
-            name="梅"
+            name="無料プラン"
             price="¥0"
             rows={[
               { label: "ホームページを見る", ok: true },
@@ -69,7 +69,7 @@ export default async function BillingPage({
             ]}
           />
           <PlanCard
-            name="竹"
+            name="通常プラン"
             price={`¥${MONTHLY_FEE.toLocaleString()}`}
             suffix="/月"
             recommended
@@ -80,7 +80,7 @@ export default async function BillingPage({
             ]}
           />
           <PlanCard
-            name="松"
+            name="上級プラン"
             price={`¥${MONTHLY_FEE_PRO.toLocaleString()}`}
             suffix="/月"
             rows={[
@@ -102,7 +102,7 @@ export default async function BillingPage({
         </ul>
 
         <p style={S.note}>
-          ※プロによる編集の実作業は都度{PRO_EDIT_FEE.toLocaleString()}円（松プランは
+          ※プロによる編集の実作業は都度{PRO_EDIT_FEE.toLocaleString()}円（上級プランは
           {PRO_EDIT_FEE_PRO_PLAN.toLocaleString()}円）です。
         </p>
       </div>
