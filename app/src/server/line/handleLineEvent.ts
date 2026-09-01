@@ -81,7 +81,7 @@ export async function handleLineEvent(event: LineEvent): Promise<void> {
   }
 
   // ヒアリング進行。名称の回答時だけ、収集済みリストと照合して候補を渡す。
-  const ctx = await buildAdvanceContext(step, text);
+  const ctx = await buildAdvanceContext(step, text, userId);
   const result = advance(step, draft, text, ctx);
   await prisma.lineUser.update({
     where: { id: session.id },
@@ -100,11 +100,16 @@ export async function handleLineEvent(event: LineEvent): Promise<void> {
 }
 
 /** 名称の回答時のみ収集リストを照合する（検索失敗は候補なしとして続行）。 */
-async function buildAdvanceContext(step: Step, text: string): Promise<AdvanceContext> {
+async function buildAdvanceContext(
+  step: Step,
+  text: string,
+  lineUserId: string,
+): Promise<AdvanceContext> {
   const isNameStep = step === STEPS.ASK_NAME || step === STEPS.START;
   if (!isNameStep || isResetCommand(text)) return {};
   try {
-    const found = await findFacilityCandidates(text);
+    // 自分が既に持っている事業所は候補に出す（本人を締め出さない）。
+    const found = await findFacilityCandidates(text, lineUserId);
     return {
       candidates: found.candidates.map((c) => ({
         id: c.id,
@@ -167,7 +172,7 @@ async function runGenerate(
   draft: HearingDraft,
 ): Promise<void> {
   try {
-    const facility = await ensureFacility(draft);
+    const facility = await ensureFacility(draft, userId);
     await prisma.lineUser.update({
       where: { id: sessionId },
       data: { facilityId: facility.id, step: STEPS.EDITING },
@@ -214,11 +219,12 @@ async function runGenerate(
  * 照合で本人確認が取れていれば収集済みレコードを再利用し（住所/TEL/法人名を活かす）、
  * 無ければ新規作成する。
  */
-async function ensureFacility(draft: HearingDraft) {
+async function ensureFacility(draft: HearingDraft, lineUserId: string) {
   if (draft.matchedFacilityId) {
     // 多層防御: 候補提示から確定までの間に持ち主が確定していないか再確認する。
     // 保護対象になっていたら、その事業所には一切書き込まず新規作成にフォールバックする。
-    const bindable = await isSelfBindable(draft.matchedFacilityId);
+    // ただし本人が既に持っている事業所は対象外（自分の事業所に入れなくなるため）。
+    const bindable = await isSelfBindable(draft.matchedFacilityId, lineUserId);
     if (!bindable) {
       console.log(
         `紐付けを拒否（保護対象の事業所）: ${draft.matchedFacilityId} → 新規作成にフォールバック`,

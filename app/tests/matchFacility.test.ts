@@ -5,6 +5,7 @@ import {
   searchTerms,
   candidateScore,
   rankCandidates,
+  buildSelfBindableWhere,
 } from "@/server/line/matchFacility.js";
 
 describe("facilityNameKey", () => {
@@ -77,6 +78,27 @@ describe("candidateScore", () => {
 
   test("無関係な名称は0点", () => {
     expect(candidateScore("さくら工房", { name: "ひまわり作業所", corpName: null })).toBe(0);
+  });
+});
+
+describe("buildSelfBindableWhere", () => {
+  test("LINEユーザー不明なら「未claim」条件のみ", () => {
+    // Arrange / Act
+    const where = buildSelfBindableWhere() as Record<string, unknown>;
+
+    // Assert
+    expect(where.lineUsers).toEqual({ none: {} });
+    expect(where.OR).toBeUndefined();
+  });
+
+  test("本人が既に持っている事業所は許可する（持ち主を締め出さない）", () => {
+    // Arrange / Act
+    const where = buildSelfBindableWhere("U123") as { OR?: Record<string, unknown>[] };
+
+    // Assert: 本人所有 OR 未claim の2択になっている
+    expect(where.OR).toHaveLength(2);
+    expect(where.OR?.[0]).toEqual({ lineUsers: { some: { lineUserId: "U123" } } });
+    expect(where.OR?.[1]).toMatchObject({ lineUsers: { none: {} } });
   });
 });
 

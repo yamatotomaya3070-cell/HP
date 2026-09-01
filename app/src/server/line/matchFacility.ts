@@ -113,7 +113,7 @@ export function rankCandidates<T extends { name: string; corpName?: string | nul
  * メール経由の編集ループは署名付きReply-Toトークンで本人性を担保している（handleInbound）。
  * LINEには等価な仕組みが無いため、ここでの除外が唯一の防御線になる。
  */
-const SELF_BINDABLE: object = {
+const UNCLAIMED: object = {
   // 他のLINEユーザーが既に紐付けている＝持ち主が居る。
   lineUsers: { none: {} },
   // 契約（トライアル含む）がある＝顧客。
@@ -121,6 +121,25 @@ const SELF_BINDABLE: object = {
   // 公開済み/解約後静的公開のサイトを持つ＝実運用中。
   sites: { none: { publishState: { in: ["published", "static"] } } },
 };
+
+/**
+ * 紐付けてよい事業所の条件を組み立てる。
+ *
+ * 重要: 「既にその事業所を持っている本人」は除外してはいけない。
+ * 持ち主が「やり直し」で再度ヒアリングした場合まで締め出してしまい、
+ * 自分の事業所に入れなくなる（実際にそうなった）。
+ * ガードの目的はあくまで第三者を止めることなので、本人は素通しする。
+ */
+export function buildSelfBindableWhere(lineUserId?: string): object {
+  if (!lineUserId) return UNCLAIMED;
+  return {
+    OR: [
+      // 本人が既に紐付けている＝自分の事業所。契約・公開の有無に関わらず許可。
+      { lineUsers: { some: { lineUserId } } },
+      UNCLAIMED,
+    ],
+  };
+}
 
 /** 名称照合の結果。 */
 export interface FacilityMatchResult {
@@ -136,11 +155,13 @@ export interface FacilityMatchResult {
  */
 export async function findFacilityCandidates(
   name: string,
+  lineUserId?: string,
   limit = 4,
 ): Promise<FacilityMatchResult> {
   const terms = searchTerms(name);
   if (terms.length === 0) return { candidates: [], protectedCount: 0 };
 
+  const bindable = buildSelfBindableWhere(lineUserId);
   const nameMatch = {
     AND: [
       { OR: terms.map((t) => ({ name: { contains: t } })) },
@@ -149,7 +170,7 @@ export async function findFacilityCandidates(
   };
 
   const rows = await prisma.facility.findMany({
-    where: { AND: [nameMatch, SELF_BINDABLE] },
+    where: { AND: [nameMatch, bindable] },
     select: {
       id: true,
       name: true,
@@ -164,7 +185,7 @@ export async function findFacilityCandidates(
 
   // 紐付け不可の一致が別にあるかを調べ、あれば運営確認へ回す材料にする。
   const protectedRows = await prisma.facility.findMany({
-    where: { AND: [nameMatch, { NOT: SELF_BINDABLE }] },
+    where: { AND: [nameMatch, { NOT: bindable }] },
     select: { id: true, name: true, corpName: true },
     take: 30,
   });
@@ -180,9 +201,12 @@ export async function findFacilityCandidates(
  * 候補提示から確定までの間に持ち主が確定した場合や、古いドラフトが残っていた場合に、
  * 保護対象の事業所へ書き込んでしまうのを防ぐ。
  */
-export async function isSelfBindable(facilityId: string): Promise<boolean> {
+export async function isSelfBindable(
+  facilityId: string,
+  lineUserId?: string,
+): Promise<boolean> {
   const found = await prisma.facility.findFirst({
-    where: { AND: [{ id: facilityId }, SELF_BINDABLE] },
+    where: { AND: [{ id: facilityId }, buildSelfBindableWhere(lineUserId)] },
     select: { id: true },
   });
   return found !== null;
