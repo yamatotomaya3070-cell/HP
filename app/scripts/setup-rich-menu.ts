@@ -10,6 +10,7 @@
 //   npm run rich-menu -- --list  … 登録済み一覧
 //   npm run rich-menu -- --clean … 既存メニューを全削除
 
+import { readFileSync, existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
@@ -22,6 +23,23 @@ import {
   listRichMenus,
   deleteRichMenu,
 } from "@/server/line/richMenu.js";
+
+/**
+ * .env を読み込む。
+ * 他のスクリプトは Prisma 経由で間接的に読み込んでいるが、このスクリプトはDBを使わないので
+ * 自分で読む必要がある（既に環境にある値は上書きしない）。
+ */
+function loadEnv(): void {
+  const file = path.resolve(".env");
+  if (!existsSync(file)) return;
+  for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (!m) continue;
+    const key = m[1];
+    if (process.env[key] !== undefined) continue;
+    process.env[key] = m[2].trim().replace(/^["']|["']$/g, "");
+  }
+}
 
 interface Tile {
   title: string;
@@ -89,6 +107,8 @@ function has(name: string): boolean {
 }
 
 async function main(): Promise<void> {
+  loadEnv();
+
   if (has("--list")) {
     const menus = await listRichMenus();
     console.log(menus.length === 0 ? "登録済みメニューはありません" : "登録済み:");
