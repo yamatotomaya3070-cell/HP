@@ -42,7 +42,7 @@ async function main() {
     await generateSiteForFacility(fid);
     console.log("① 生成直後       :", await state(fid));
 
-    await processPaymentEvent({ type: "trial_started", eventId: "e-trial", facilityId: fid, subscriptionId: "sub_x" });
+    await processPaymentEvent({ type: "trial_started", eventId: "e-trial", facilityId: fid, subscriptionId: "sub_x", plan: "standard" });
     console.log("② トライアル開始 :", await state(fid));
     console.log("   トライアル中の編集:", await tryEdit(fid, "businessHours", "9:00〜17:00"));
 

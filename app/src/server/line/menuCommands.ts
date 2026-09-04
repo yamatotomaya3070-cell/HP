@@ -8,6 +8,8 @@
 // ヒアリング/編集より先に判定する必要がある（でないと「料金プラン」が編集指示として
 // AIに渡ってしまう）。
 
+import { PRO_EDIT_FEE, PRO_EDIT_FEE_PRO_PLAN } from "@/server/billing/lifecycle.js";
+
 export const MENU = {
   PRICING: "料金プラン",
   HOWTO: "使い方",
@@ -68,12 +70,17 @@ export function faqMessages(): string[] {
   ];
 }
 
-/** 「プロに相談」を受けたときの返信。 */
-export function proConsultMessages(): string[] {
+/**
+ * 「プロに相談」を受けたときの返信。
+ * 上級プラン契約者には割引価格を、それ以外（無料/通常プラン/未加入/不明）には通常価格を伝える。
+ * 事業所が未確定（生成前）で isPro が分からない場合も安全側の通常価格にする。
+ */
+export function proConsultMessages(isPro: boolean = false): string[] {
+  const fee = isPro ? PRO_EDIT_FEE_PRO_PLAN : PRO_EDIT_FEE;
   return [
     "プロによる編集依頼を承ります。担当者が内容を伺ったうえで、ホームページをお作りします。",
     [
-      "料金は都度10,000円です（上級プラン ¥7,000/月 のお客さまは8,000円）。",
+      `料金は都度${fee.toLocaleString()}円です${isPro ? "（上級プランのお客さま価格）" : ""}。`,
       "",
       "ご希望の内容を、このトークにお書きください。担当者より折り返しご連絡いたします。",
     ].join("\n"),

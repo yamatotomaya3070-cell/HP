@@ -382,7 +382,8 @@ async function onMenuCommand(
       await replyText(replyToken, faqMessages());
       return;
     case MENU.PRO: {
-      await replyText(replyToken, proConsultMessages());
+      const isPro = facilityId ? await isProPlan(facilityId) : false;
+      await replyText(replyToken, proConsultMessages(isPro));
       await escalate(facilityId, userId, "リッチメニューから「プロに相談」");
       return;
     }
@@ -390,6 +391,15 @@ async function onMenuCommand(
 }
 
 /** 料金カード（Flex）を、その事業所専用の決済リンク付きで送る。 */
+/** 有効な契約が上級プランか（trialing/active/past_due のいずれかでplan=pro）。 */
+async function isProPlan(facilityId: string): Promise<boolean> {
+  const sub = await prisma.subscription.findUnique({
+    where: { facilityId },
+    select: { plan: true, state: true },
+  });
+  return sub?.plan === "pro" && sub.state !== "canceled";
+}
+
 async function sendPricingCard(
   facilityId: string,
   replyToken: string,

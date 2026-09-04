@@ -80,12 +80,14 @@ async function onTrialStarted(e: Extract<PaymentEvent, { type: "trial_started" }
         stripeCustomerId: e.customerId,
         stripeSubscriptionId: e.subscriptionId,
         state: "trialing",
+        plan: e.plan,
         nextBillingAt: endsAt,
       },
       update: {
         stripeCustomerId: e.customerId,
         stripeSubscriptionId: e.subscriptionId,
         state: "trialing",
+        plan: e.plan,
         nextBillingAt: endsAt,
         canceledAt: null,
       },
@@ -95,7 +97,7 @@ async function onTrialStarted(e: Extract<PaymentEvent, { type: "trial_started" }
     });
     await tx.facility.update({ where: { id: e.facilityId }, data: { status: "trialing" } });
     await tx.leadEvent.create({
-      data: { facilityId: e.facilityId, type: "card_registered", meta: { endsAt } },
+      data: { facilityId: e.facilityId, type: "card_registered", meta: { endsAt, plan: e.plan } },
     });
   });
   return { applied: true, note: `トライアル開始（終了日 ${endsAt.toISOString().slice(0, 10)}）` };

@@ -37,7 +37,7 @@ async function main() {
   const fid = facility.id;
   try {
     await generateSiteForFacility(fid);
-    await processPaymentEvent({ type: "trial_started", eventId: `e-${num}`, facilityId: fid, subscriptionId: `sub-${num}` });
+    await processPaymentEvent({ type: "trial_started", eventId: `e-${num}`, facilityId: fid, subscriptionId: `sub-${num}`, plan: "standard" });
 
     const trial = await prisma.trial.findFirstOrThrow({ where: { facilityId: fid, state: "active" } });
     const endsAt = trial.endsAt;

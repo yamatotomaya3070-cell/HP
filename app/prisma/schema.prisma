@@ -92,6 +92,12 @@ enum SubscriptionState {
   canceled
 }
 
+/// 契約プラン。standard=通常プラン(¥5,000) / pro=上級プラン(¥7,000・プロ相談が割引価格)。
+enum SubscriptionPlan {
+  standard
+  pro
+}
+
 enum PaymentKind {
   publish_5000 // 正式公開 初回5,000円
   subscription // 月額4,000円
@@ -373,6 +379,7 @@ model Subscription {
   stripeCustomerId     String?           @map("stripe_customer_id")
   stripeSubscriptionId String?           @unique @map("stripe_subscription_id")
   state                SubscriptionState @default(trialing)
+  plan                 SubscriptionPlan  @default(standard)
   nextBillingAt        DateTime?         @map("next_billing_at")
   canceledAt           DateTime?         @map("canceled_at")
 

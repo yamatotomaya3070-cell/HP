@@ -5,9 +5,13 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { StripePaymentProvider } from "./stripeProvider.js";
 
+/** 契約プラン。standard=通常プラン(¥5,000) / pro=上級プラン(¥7,000)。 */
+export type SubscriptionPlan = "standard" | "pro";
+
 export interface TrialCheckoutInput {
   facilityId: string;
   email?: string;
+  plan: SubscriptionPlan;
 }
 export interface PublishCheckoutInput {
   facilityId: string;
@@ -22,7 +26,14 @@ export interface CheckoutResult {
 
 /** Webhook を正規化したイベント。冪等キー eventId 必須。 */
 export type PaymentEvent =
-  | { type: "trial_started"; eventId: string; facilityId: string; customerId?: string; subscriptionId?: string }
+  | {
+      type: "trial_started";
+      eventId: string;
+      facilityId: string;
+      customerId?: string;
+      subscriptionId?: string;
+      plan: SubscriptionPlan;
+    }
   | { type: "payment_succeeded"; eventId: string; facilityId: string; kind: "publish_5000" | "subscription"; amount: number }
   | { type: "payment_failed"; eventId: string; facilityId: string; kind: "publish_5000" | "subscription"; amount: number }
   | { type: "subscription_canceled"; eventId: string; facilityId: string }
@@ -92,6 +103,8 @@ export function normalizePaymentEvent(body: unknown): PaymentEvent {
         facilityId,
         customerId: typeof b.customerId === "string" ? b.customerId : undefined,
         subscriptionId: typeof b.subscriptionId === "string" ? b.subscriptionId : undefined,
+        // 不正な値は standard 扱い（未知の文字列で処理を止めない）。
+        plan: b.plan === "pro" ? "pro" : "standard",
       };
     case "payment_succeeded":
     case "payment_failed": {
@@ -126,6 +139,8 @@ export function getPaymentProvider(): PaymentProvider {
       secretKey,
       webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
       subscriptionPriceId,
+      // 未設定でもよい（上級プランのCheckoutだけが使えない状態になる）。
+      subscriptionPriceIdPro: process.env.STRIPE_PRICE_SUBSCRIPTION_PRO || undefined,
       successUrl: process.env.STRIPE_SUCCESS_URL ?? `${base}/billing/success`,
       cancelUrl: process.env.STRIPE_CANCEL_URL ?? `${base}/billing/cancel`,
     });

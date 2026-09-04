@@ -1,7 +1,8 @@
 // 決済Checkoutの開始（導線の入口）。署名トークンで事業所を特定し、
 // getPaymentProvider()（Stripeキーがあれば本番、無ければStub）で Checkout を作成しリダイレクトする。
-//   /api/billing/checkout?token=<billing token>[&type=trial|publish]
-// type 既定は trial（カード登録＋14日体験＋サブスク）。publish は 5,000円の公開決済。
+//   /api/billing/checkout?token=<billing token>[&type=trial|publish][&plan=standard|pro]
+// type 既定は trial（カード登録＋7日体験＋サブスク）。publish は 5,000円の公開決済（廃止予定・互換のため残す）。
+// plan は trial のときのみ有効。既定 standard（通常プラン ¥5,000）。pro は上級プラン ¥7,000。
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db.js";
@@ -14,6 +15,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const token = url.searchParams.get("token") ?? "";
   const type = url.searchParams.get("type") === "publish" ? "publish" : "trial";
+  const plan = url.searchParams.get("plan") === "pro" ? "pro" : "standard";
 
   const auth = verifyToken(token, "billing");
   if (!auth.ok) {
@@ -36,6 +38,7 @@ export async function GET(req: Request) {
         : await provider.createTrialCheckout({
             facilityId: facility.id,
             email: facility.email ?? undefined,
+            plan,
           });
     if (!checkout.url) {
       return NextResponse.json({ error: "決済URLを取得できませんでした" }, { status: 502 });

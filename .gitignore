@@ -21,3 +21,4 @@ app/screenshots/
 .DS_Store
 Thumbs.db
 .vercel/
+exports/

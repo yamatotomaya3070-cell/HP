@@ -45,7 +45,8 @@ export default async function BillingPage({
   });
   if (!facility) notFound();
 
-  const checkoutHref = `/api/billing/checkout?token=${encodeURIComponent(token)}&type=trial`;
+  const checkoutHref = (plan: "standard" | "pro") =>
+    `/api/billing/checkout?token=${encodeURIComponent(token)}&type=trial&plan=${plan}`;
 
   return (
     <main style={S.wrap}>
@@ -78,6 +79,8 @@ export default async function BillingPage({
               { label: "ホームページ公開", ok: true },
               { label: "プロに相談", ok: false },
             ]}
+            ctaHref={checkoutHref("standard")}
+            ctaLabel={`${TRIAL_DAYS}日間無料ではじめる →`}
           />
           <PlanCard
             name="上級プラン"
@@ -88,12 +91,10 @@ export default async function BillingPage({
               { label: "ホームページ公開", ok: true },
               { label: "プロに相談できる", ok: true },
             ]}
+            ctaHref={checkoutHref("pro")}
+            ctaLabel={`${TRIAL_DAYS}日間無料ではじめる →`}
           />
         </div>
-
-        <a href={checkoutHref} style={S.cta}>
-          {TRIAL_DAYS}日間無料ではじめる →
-        </a>
 
         <ul style={S.list}>
           <li>🔒 カード情報は決済会社（Stripe）が安全に処理し、当社では保存しません</li>
@@ -116,12 +117,17 @@ function PlanCard({
   suffix,
   rows,
   recommended = false,
+  ctaHref,
+  ctaLabel,
 }: {
   name: string;
   price: string;
   suffix?: string;
   rows: { label: string; ok: boolean }[];
   recommended?: boolean;
+  /** 指定があれば、このプラン専用の登録ボタンをカード内に出す（無料プランは指定しない）。 */
+  ctaHref?: string;
+  ctaLabel?: string;
 }) {
   return (
     <div style={{ ...S.plan, ...(recommended ? S.planOn : null) }}>
@@ -145,6 +151,11 @@ function PlanCard({
           </li>
         ))}
       </ul>
+      {ctaHref && (
+        <a href={ctaHref} style={recommended ? S.cta : S.ctaSecondary}>
+          {ctaLabel}
+        </a>
+      )}
     </div>
   );
 }
@@ -250,10 +261,24 @@ const S: Record<string, React.CSSProperties> = {
     color: "#fff",
     textDecoration: "none",
     fontWeight: 800,
-    fontSize: "1.05rem",
-    padding: "1rem 1.4rem",
+    fontSize: ".98rem",
+    padding: ".85rem 1.2rem",
     borderRadius: 999,
+    marginTop: ".9rem",
     boxShadow: "0 10px 24px -10px rgba(47,143,91,.6)",
+  },
+  ctaSecondary: {
+    display: "block",
+    textAlign: "center",
+    background: "#fff",
+    color: "#2f8f5b",
+    border: "1.5px solid #2f8f5b",
+    textDecoration: "none",
+    fontWeight: 700,
+    fontSize: ".98rem",
+    padding: ".85rem 1.2rem",
+    borderRadius: 999,
+    marginTop: ".9rem",
   },
   note: { fontSize: ".82rem", color: "#6b7a6f", textAlign: "center", margin: "1rem 0 0" },
 };

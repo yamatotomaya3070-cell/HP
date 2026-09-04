@@ -10,14 +10,17 @@ import {
   type PublishCheckoutInput,
   type CheckoutResult,
   type PaymentEvent,
+  type SubscriptionPlan,
   PaymentProviderError,
 } from "./provider.js";
 
 export interface StripeConfig {
   secretKey: string;
   webhookSecret?: string;
-  /** 月額サブスクの Price ID（Stripe ダッシュボードで作成）。 */
+  /** 通常プラン(¥5,000)の Price ID（Stripe ダッシュボードで作成）。 */
   subscriptionPriceId: string;
+  /** 上級プラン(¥7,000)の Price ID。未設定なら上級プランのCheckoutは作成できない。 */
+  subscriptionPriceIdPro?: string;
   /** 決済完了後の戻り先。 */
   successUrl: string;
   cancelUrl: string;
@@ -31,6 +34,11 @@ export interface StripeConfig {
 function facilityIdFrom(metadata: Stripe.Metadata | null | undefined): string | undefined {
   const v = metadata?.facilityId;
   return typeof v === "string" && v.length > 0 ? v : undefined;
+}
+
+/** metadata から plan を取り出す。不正/未設定は standard（安全側）。 */
+function planFrom(metadata: Stripe.Metadata | null | undefined): SubscriptionPlan {
+  return metadata?.plan === "pro" ? "pro" : "standard";
 }
 
 /**
@@ -53,15 +61,23 @@ export class StripePaymentProvider implements PaymentProvider {
   }
 
   async createTrialCheckout(input: TrialCheckoutInput): Promise<CheckoutResult> {
+    const priceId =
+      input.plan === "pro" ? this.config.subscriptionPriceIdPro : this.config.subscriptionPriceId;
+    if (!priceId) {
+      throw new PaymentProviderError(
+        `プラン ${input.plan} のPrice IDが未設定です`,
+        "bad_payload",
+      );
+    }
     const session = await this.stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: this.config.subscriptionPriceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       customer_email: input.email,
       subscription_data: {
         trial_period_days: this.config.trialDays ?? 14,
-        metadata: { facilityId: input.facilityId },
+        metadata: { facilityId: input.facilityId, plan: input.plan },
       },
-      metadata: { facilityId: input.facilityId },
+      metadata: { facilityId: input.facilityId, plan: input.plan },
       success_url: this.config.successUrl,
       cancel_url: this.config.cancelUrl,
     });
@@ -126,6 +142,7 @@ export function mapStripeEvent(event: Stripe.Event): PaymentEvent {
           facilityId,
           customerId: typeof s.customer === "string" ? s.customer : undefined,
           subscriptionId: typeof s.subscription === "string" ? s.subscription : undefined,
+          plan: planFrom(s.metadata),
         };
       }
       // 単発決済（正式公開 5,000円）
