@@ -15,8 +15,7 @@ const ENV_PATH = ".env";
 // webhook ルートが処理するイベント（stripeProvider.mapStripeEvent と一致させる）
 const WEBHOOK_EVENTS: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
   "checkout.session.completed",
-  "invoice.paid",
-  "invoice.payment_succeeded",
+  "invoice.paid", // invoice.payment_succeeded は同じ支払いの重複通知なので購読しない
   "invoice.payment_failed",
   "customer.subscription.deleted",
   "customer.subscription.resumed",

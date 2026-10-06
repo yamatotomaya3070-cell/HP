@@ -37,7 +37,9 @@ export type PaymentEvent =
   | { type: "payment_succeeded"; eventId: string; facilityId: string; kind: "publish_5000" | "subscription"; amount: number }
   | { type: "payment_failed"; eventId: string; facilityId: string; kind: "publish_5000" | "subscription"; amount: number }
   | { type: "subscription_canceled"; eventId: string; facilityId: string }
-  | { type: "subscription_resumed"; eventId: string; facilityId: string; subscriptionId?: string };
+  | { type: "subscription_resumed"; eventId: string; facilityId: string; subscriptionId?: string }
+  /** 状態を変えないイベント（0円請求書・重複通知・未対応種別）。200で受け取り再送を止める。 */
+  | { type: "ignored"; eventId: string; reason: string };
 
 export class PaymentProviderError extends Error {
   constructor(message: string, readonly kind: "bad_signature" | "bad_payload") {

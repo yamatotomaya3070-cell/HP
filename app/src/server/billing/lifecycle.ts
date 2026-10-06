@@ -1,5 +1,5 @@
 // 課金・公開の状態機械（仕様 Phase5-6）。
-// - 14日トライアル（終了日計算）
+// - TRIAL_DAYS 日トライアル（終了日計算）
 // - 5,000円決済成功時のみ公開（それ以前は非公開）
 // - 解約後も静的公開継続（公開は残す・AI編集のみ停止）
 // - 再契約で再開
@@ -8,15 +8,16 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db.js";
 import { type PaymentEvent } from "./provider.js";
+import { TRIAL_DAYS } from "./pricing.js";
 
-// 料金体系（2026-09 改定）: 無料¥0 / 通常¥5,000 / 上級¥7,000。公開は月額に含む。
-export const TRIAL_DAYS = 7;
-export const MONTHLY_FEE = 5000; // 円（通常プラン月額・編集し放題＋公開）
-export const MONTHLY_FEE_PRO = 7000; // 円（上級プラン月額・プロに相談できる）
-export const PRO_EDIT_FEE = 10000; // 円（プロ編集の都度依頼。上級プランは8,000円）
-export const PRO_EDIT_FEE_PRO_PLAN = 8000;
-/** @deprecated 公開は月額に含むため廃止。過去の Payment レコード互換のために残す。 */
-export const PUBLISH_FEE = 5000;
+export {
+  TRIAL_DAYS,
+  MONTHLY_FEE,
+  MONTHLY_FEE_PRO,
+  PRO_EDIT_FEE,
+  PRO_EDIT_FEE_PRO_PLAN,
+  PUBLISH_FEE,
+} from "./pricing.js";
 
 function addDays(base: Date, days: number): Date {
   return new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
@@ -67,7 +68,7 @@ export interface EventOutcome {
   note: string;
 }
 
-/** カード登録＋14日トライアル開始。終了日＝開始+14日。冪等（subscription upsert）。 */
+/** カード登録＋トライアル開始。終了日＝開始+TRIAL_DAYS日。冪等（subscription upsert）。 */
 async function onTrialStarted(e: Extract<PaymentEvent, { type: "trial_started" }>): Promise<EventOutcome> {
   const now = new Date();
   const endsAt = addDays(now, TRIAL_DAYS);
@@ -198,6 +199,8 @@ export async function processPaymentEvent(e: PaymentEvent): Promise<EventOutcome
       return onCanceled(e);
     case "subscription_resumed":
       return onResumed(e);
+    case "ignored":
+      return { applied: false, note: `無視: ${e.reason}` };
   }
 }
 

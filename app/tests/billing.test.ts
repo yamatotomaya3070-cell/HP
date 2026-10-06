@@ -4,7 +4,7 @@ import {
   PaymentProviderError,
 } from "@/server/billing/provider.js";
 import { TRIAL_DAYS, MONTHLY_FEE, MONTHLY_FEE_PRO } from "@/server/billing/lifecycle.js";
-import { mapStripeEvent } from "@/server/billing/stripeProvider.js";
+import { mapStripeEvent, StripePaymentProvider } from "@/server/billing/stripeProvider.js";
 import type Stripe from "stripe";
 
 describe("決済イベント正規化", () => {
@@ -97,5 +97,69 @@ describe("Stripe イベント → 内部イベントの写像（plan判定）", 
   it("metadata.plan が無ければ standard", () => {
     const e = mapStripeEvent(checkoutEvent({ facilityId: "fac_1" }));
     expect(e).toMatchObject({ type: "trial_started", plan: "standard" });
+  });
+});
+
+describe("Stripe Checkout の体験日数", () => {
+  it("サイト表示と同じ TRIAL_DAYS 日後に課金が始まる", async () => {
+    const provider = new StripePaymentProvider({
+      secretKey: "sk_test_dummy",
+      subscriptionPriceId: "price_std",
+      successUrl: "https://example.com/ok",
+      cancelUrl: "https://example.com/ng",
+    });
+    let params: Stripe.Checkout.SessionCreateParams | undefined;
+    (provider as unknown as { stripe: unknown }).stripe = {
+      checkout: {
+        sessions: {
+          create: async (p: Stripe.Checkout.SessionCreateParams) => {
+            params = p;
+            return { id: "cs_1", url: "https://checkout.stripe.com/x" };
+          },
+        },
+      },
+    };
+    await provider.createTrialCheckout({ facilityId: "fac_1", plan: "standard" });
+    expect(params?.subscription_data?.trial_period_days).toBe(TRIAL_DAYS);
+  });
+});
+
+describe("Stripe 請求書イベントの写像", () => {
+  function invoiceEvent(type: string, invoice: Record<string, unknown>): Stripe.Event {
+    return { id: "evt_in_1", type, data: { object: invoice } } as unknown as Stripe.Event;
+  }
+  // 現行API(2025-03以降)ではサブスクの metadata は parent.subscription_details に入る
+  const parent = { parent: { subscription_details: { metadata: { facilityId: "fac_1" } } } };
+
+  it("parent.subscription_details.metadata から facilityId を取り出す", () => {
+    const e = mapStripeEvent(invoiceEvent("invoice.paid", { ...parent, amount_paid: 5000 }));
+    expect(e).toMatchObject({ type: "payment_succeeded", facilityId: "fac_1", kind: "subscription", amount: 5000 });
+  });
+
+  it("旧API形式(subscription_details直下)も引き続き読める", () => {
+    const e = mapStripeEvent(
+      invoiceEvent("invoice.paid", { subscription_details: { metadata: { facilityId: "fac_1" } }, amount_paid: 5000 }),
+    );
+    expect(e).toMatchObject({ type: "payment_succeeded", facilityId: "fac_1" });
+  });
+
+  it("体験開始時の0円請求書は契約成立扱いにしない", () => {
+    const e = mapStripeEvent(invoiceEvent("invoice.paid", { ...parent, amount_paid: 0 }));
+    expect(e).toMatchObject({ type: "ignored" });
+  });
+
+  it("invoice.payment_succeeded は invoice.paid と二重計上しないよう無視する", () => {
+    const e = mapStripeEvent(invoiceEvent("invoice.payment_succeeded", { ...parent, amount_paid: 5000 }));
+    expect(e).toMatchObject({ type: "ignored" });
+  });
+
+  it("支払い失敗は parent 経由でも facilityId を取れる", () => {
+    const e = mapStripeEvent(invoiceEvent("invoice.payment_failed", { ...parent, amount_due: 5000 }));
+    expect(e).toMatchObject({ type: "payment_failed", facilityId: "fac_1", amount: 5000 });
+  });
+
+  it("未対応イベントはエラーにせず無視（Stripeの再送ループを防ぐ）", () => {
+    const e = mapStripeEvent(invoiceEvent("customer.created", {}));
+    expect(e).toMatchObject({ type: "ignored" });
   });
 });
