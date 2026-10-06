@@ -27,6 +27,7 @@
     "media-generate": "tsx scripts/media-generate.ts",
     "media-upload": "tsx scripts/media-upload.ts",
     "domain": "tsx scripts/domain.ts",
+    "stripe-setup": "tsx scripts/stripe-setup.ts",
     "billing-sim": "tsx scripts/billing-sim.ts",
     "trial-reminders": "tsx scripts/trial-reminders.ts",
     "trial-reminders-sim": "tsx scripts/trial-reminders-sim.ts",
